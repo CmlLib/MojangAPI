@@ -4,11 +4,11 @@ using System.Text;
 
 namespace MojangAPI.Model
 {
-    public class UserProfile
+    public class UserProfile : MojangAPIResponse
     {
-        public string UUID { get; set; }
-        public string Name { get; set; }
-        public Skin Skin { get; set; }
+        public string UUID { get; set; } = "";
+        public string Name { get; set; } = "";
+        public Skin? Skin { get; set; }
         public bool IsLegacy { get; set; } = false;
     }
 }

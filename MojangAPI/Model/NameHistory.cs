@@ -5,15 +5,23 @@ using Newtonsoft.Json;
 
 namespace MojangAPI.Model
 {
-    public class NameHistory : MojangAPIResponse
+    public class NameHistory
     {
         [JsonProperty("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonProperty("changedToAt")]
-        public long ChangedToAt { get; set; }
+        public long? ChangedToAt { get; set; }
 
-        [JsonProperty("changedToAt")]
-        public DateTime ChangedTime { get => DateTimeOffset.FromUnixTimeMilliseconds(ChangedToAt).UtcDateTime; }
+        public DateTime ChangedTime
+        {
+            get
+            {
+                if (ChangedToAt == null)
+                    return DateTime.MinValue;
+                else
+                    return DateTimeOffset.FromUnixTimeMilliseconds((long)ChangedToAt).LocalDateTime;
+            }
+        }
     }
 }

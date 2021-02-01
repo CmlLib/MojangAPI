@@ -23,10 +23,10 @@ namespace MojangAPI.Model
         }
 
         [JsonProperty("id")]
-        public string UUID { get; set; }
+        public string? UUID { get; set; }
 
         [JsonProperty("name")]
-        public string CurrentUsername { get; set; }
+        public string? CurrentUsername { get; set; }
 
         [JsonProperty("legacy")]
         public bool IsLegacy { get; set; } = false;

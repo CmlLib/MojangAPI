@@ -20,13 +20,13 @@ namespace HttpAction
 
         }
 
-        public JsonHttpContent(object obj, Encoding encoding)
+        public JsonHttpContent(object obj, Encoding? encoding)
             : this(obj, encoding, DefaultMediaType)
         {
 
         }
 
-        public JsonHttpContent(object obj, Encoding encoding, string mediaType)
+        public JsonHttpContent(object obj, Encoding? encoding, string mediaType)
             : base(serialize(obj), encoding, mediaType)
         {
             
@@ -34,7 +34,10 @@ namespace HttpAction
 
         public static string serialize(object obj)
         {
-            return JsonConvert.SerializeObject(obj);
+            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            });
         }
     }
 }

@@ -11,7 +11,7 @@ namespace MojangAPI.Model
             && string.IsNullOrEmpty(Error)
             && string.IsNullOrEmpty(ErrorMessage); 
 
-        public virtual string Error { get; set; }
-        public virtual string ErrorMessage { get; set; }
+        public virtual string? Error { get; set; }
+        public virtual string? ErrorMessage { get; set; }
     }
 }

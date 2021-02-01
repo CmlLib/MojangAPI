@@ -21,26 +21,58 @@ namespace HttpAction
 
         public static async Task<T> SendActionAsync<T>(this HttpClient client, HttpAction<T> httpAction, HttpCompletionOption httpCompletionOption, CancellationToken cancellationToken)
         {
-            if (httpAction.RequestUri == null)
-                httpAction.RequestUri = httpAction.CreateUri();
+            try
+            {
+                if (httpAction.ResponseHandler == null)
+                    throw new ArgumentNullException("httpAction.ResponseHandler");
 
-            if (httpAction.RequestHeaders != null)
-                httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
+                if (httpAction.CheckValidation != null)
+                {
+                    string? valid = httpAction.CheckValidation(httpAction);
+                    if (!string.IsNullOrEmpty(valid))
+                        throw new ArgumentException("Invalid Request : " + valid);
+                }
 
-            HttpResponseMessage response
-                = await client.SendAsync((HttpRequestMessage)httpAction, httpCompletionOption, cancellationToken);
-            
-            T result;
-            if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
-                result = await httpAction.ResponseHandler(response);
-            else
-                result = await httpAction.ErrorHandler(response);
+                if (httpAction.RequestUri == null)
+                    httpAction.RequestUri = httpAction.CreateUri();
 
-            ActionResponse actionResponse = result as ActionResponse;
-            if (actionResponse != null)
-                actionResponse.StatusCode = (int)response.StatusCode;
+                if (httpAction.RequestHeaders != null)
+                    httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
 
-            return result;
+                HttpResponseMessage response
+                    = await client.SendAsync((HttpRequestMessage)httpAction, httpCompletionOption, cancellationToken);
+
+                T result;
+                if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
+                {
+                    try
+                    {
+                        result = await httpAction.ResponseHandler(response);
+                    }
+                    catch (Exception e)
+                    {
+                        if (httpAction.ErrorHandler != null)
+                            result = await httpAction.ErrorHandler(response, e);
+                        else
+                            throw;
+                    }
+                }
+                else
+                    result = await httpAction.ErrorHandler(response, null);
+
+                ActionResponse? actionResponse = result as ActionResponse;
+                if (actionResponse != null)
+                    actionResponse.StatusCode = (int)response.StatusCode;
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                if (httpAction.ErrorHandler != null)
+                    return await httpAction.ErrorHandler(null, ex);
+                else
+                    throw;
+            }
         }
     }
 }

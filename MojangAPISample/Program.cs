@@ -24,8 +24,8 @@ namespace MojangAPISample
             };
             
             session = await testMojangAuth(auth);
-            //await testMojangAPIs(mojang, session);
-            //await testSecurityFlow(qflow, session);
+            await testMojangAPIs(mojang, session);
+            await testSecurityFlow(qflow, session);
             //await test_DANGEROUS_apis(mojang, session);
 
             Console.WriteLine("Done");

@@ -61,29 +61,25 @@ namespace MojangAPI
                 }
             });
 
-        public Task<NameHistoryResponse> GetNameHistories(string uuid) =>
-            client.SendActionAsync(new HttpAction<NameHistoryResponse>
+        public Task<NameHistory[]?> GetNameHistories(string uuid) =>
+            client.SendActionAsync(new HttpAction<NameHistory[]?>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
                 Path = $"user/profiles/{uuid?.Replace("-", "") ?? throw new ArgumentNullException(nameof(uuid))}/names",
-                ResponseHandler = async (response) => 
-                {
-                    var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
-                    var histories = await handler.Invoke(response);
-                    return new NameHistoryResponse(histories);
-                },
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<NameHistoryResponse>()
+                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>(),
+                ErrorHandler = (res, ex) => Task.FromResult<NameHistory[]?>(null)
             });
 
-        public Task<UserUUID[]> GetUUIDs(string[] usernames) =>
-            client.SendActionAsync(new HttpAction<UserUUID[]>
+        public Task<UserUUID[]?> GetUUIDs(string[] usernames) =>
+            client.SendActionAsync(new HttpAction<UserUUID[]?>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
                 Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException()),
-                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<UserUUID>()
+                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<UserUUID>(),
+                ErrorHandler = (res, ex) => Task.FromResult<UserUUID[]?>(null)
             });
 
         public Task<UserProfile> GetProfileUsingUUID(string uuid) =>

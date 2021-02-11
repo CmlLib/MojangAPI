@@ -61,14 +61,19 @@ namespace MojangAPI
                 }
             });
 
-        public Task<NameHistory[]?> GetNameHistories(string uuid) =>
-            client.SendActionAsync(new HttpAction<NameHistory[]?>
+        public Task<NameHistoryResponse> GetNameHistories(string uuid) =>
+            client.SendActionAsync(new HttpAction<NameHistoryResponse>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
                 Path = $"user/profiles/{uuid?.Replace("-", "") ?? throw new ArgumentNullException(nameof(uuid))}/names",
-                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>(),
-                ErrorHandler = (res, ex) => Task.FromResult<NameHistory[]?>(null)
+                ResponseHandler = async (response) =>
+                {
+                    var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
+                    var histories = await handler.Invoke(response);
+                    return new NameHistoryResponse(histories);
+                },
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<NameHistoryResponse>()
             });
 
         public Task<PlayerUUID[]?> GetUUIDs(string[] usernames) =>

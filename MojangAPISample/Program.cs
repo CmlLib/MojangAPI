@@ -40,16 +40,15 @@ namespace MojangAPISample
             Console.WriteLine($"UUID: {uuid.UUID}, IsLegacy: {uuid.IsLegacy}, IsDemo: {uuid.IsDemo}\n");
 
             Console.WriteLine("GetNameHistories");
-            NameHistory[] historyRes = await mojang.GetNameHistories(session.UUID);
-            if (historyRes != null)
+            NameHistoryResponse historyRes = await mojang.GetNameHistories(session.UUID);
+            printResponse(historyRes);
+            if (historyRes.IsSuccess)
             {
-                foreach (var item in historyRes)
+                foreach (var item in historyRes.Histories)
                 {
                     Console.WriteLine($"[{item.ChangedTime}] {item.Name}");
                 }
             }
-            else
-                Console.WriteLine("failed");
             Console.WriteLine();
 
             Console.WriteLine("GetProfileUsingUUID");

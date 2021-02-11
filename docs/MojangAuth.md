@@ -1,4 +1,4 @@
-## MojangAuth
+## class MojangAuth
 
 Most methods return `MojangAuthResponse` or class inherited from `MojangAuthResponse`.  
 You can check whether the request was successful or failed to check `IsSuccess` property in `MojangAuthResponse`.  

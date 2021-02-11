@@ -1,4 +1,4 @@
-## Mojang
+## class Mojang
 
 Most methods return `MojangAPIResponse` or class inherited from `MojangAPIResponse`.  
 You can check whether the request was successful or failed to check `IsSuccess` property in `MojangAPIResponse`.  
@@ -20,6 +20,8 @@ else
     Console.WriteLine(response.ErrorMessage);
 }
 ```
+
+### Methods
 
 #### GetUUID
 

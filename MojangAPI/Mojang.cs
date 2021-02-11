@@ -37,19 +37,19 @@ namespace MojangAPI
             this.client = client;
         }
 
-        public Task<UserUUID> GetUUID(string username) =>
-            client.SendActionAsync(new HttpAction<UserUUID>
+        public Task<PlayerUUID> GetUUID(string username) =>
+            client.SendActionAsync(new HttpAction<PlayerUUID>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
                 Path = $"users/profiles/minecraft/{username ?? throw new ArgumentNullException(nameof(username))}"
             });
 
-        public Task<UserUUID> GetUUID(string username, DateTimeOffset timestamp) =>
+        public Task<PlayerUUID> GetUUID(string username, DateTimeOffset timestamp) =>
             GetUUID(username, timestamp.ToUnixTimeSeconds());
 
-        public Task<UserUUID> GetUUID(string username, long timestamp) =>
-            client.SendActionAsync(new HttpAction<UserUUID>
+        public Task<PlayerUUID> GetUUID(string username, long timestamp) =>
+            client.SendActionAsync(new HttpAction<PlayerUUID>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
@@ -71,19 +71,19 @@ namespace MojangAPI
                 ErrorHandler = (res, ex) => Task.FromResult<NameHistory[]?>(null)
             });
 
-        public Task<UserUUID[]?> GetUUIDs(string[] usernames) =>
-            client.SendActionAsync(new HttpAction<UserUUID[]?>
+        public Task<PlayerUUID[]?> GetUUIDs(string[] usernames) =>
+            client.SendActionAsync(new HttpAction<PlayerUUID[]?>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
                 Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException()),
-                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<UserUUID>(),
-                ErrorHandler = (res, ex) => Task.FromResult<UserUUID[]?>(null)
+                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<PlayerUUID>(),
+                ErrorHandler = (res, ex) => Task.FromResult<PlayerUUID[]?>(null)
             });
 
-        public Task<UserProfile> GetProfileUsingUUID(string uuid) =>
-            client.SendActionAsync(new HttpAction<UserProfile>
+        public Task<PlayerProfile> GetProfileUsingUUID(string uuid) =>
+            client.SendActionAsync(new HttpAction<PlayerProfile>
             {
                 Method = HttpMethod.Get,
                 Host = "https://sessionserver.mojang.com",
@@ -91,7 +91,7 @@ namespace MojangAPI
                 ResponseHandler = uuidProfileResponseHandler
             });
 
-        private async Task<UserProfile> uuidProfileResponseHandler(HttpResponseMessage response)
+        private async Task<PlayerProfile> uuidProfileResponseHandler(HttpResponseMessage response)
         {
             string responseContent = await response.Content.ReadAsStringAsync();
             JObject job = JObject.Parse(responseContent);
@@ -128,7 +128,7 @@ namespace MojangAPI
                 skin = new Skin(null, defaultSkinType);
             }
 
-            return new UserProfile
+            return new PlayerProfile
             {
                 UUID = uuid ?? "",
                 Name = name,
@@ -137,8 +137,8 @@ namespace MojangAPI
             };
         }
 
-        public Task<UserProfile> GetProfileUsingAccessToken(string accessToken) =>
-            client.SendActionAsync(new HttpAction<UserProfile>
+        public Task<PlayerProfile> GetProfileUsingAccessToken(string accessToken) =>
+            client.SendActionAsync(new HttpAction<PlayerProfile>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.minecraftservices.com",
@@ -152,14 +152,14 @@ namespace MojangAPI
                 ResponseHandler = atProfileResponseHandler
             });
 
-        private async Task<UserProfile> atProfileResponseHandler(HttpResponseMessage response)
+        private async Task<PlayerProfile> atProfileResponseHandler(HttpResponseMessage response)
         {
             string responseContent = await response.Content.ReadAsStringAsync();
             JObject job = JObject.Parse(responseContent);
 
             var skinObj = job["skins"]?[0];
 
-            return new UserProfile
+            return new PlayerProfile
             {
                 UUID = job["id"]?.ToString() ?? "",
                 Name = job["name"]?.ToString() ?? "",
@@ -172,12 +172,12 @@ namespace MojangAPI
             };
         }
 
-        public Task<UserProfile> ChangeName(string accessToken, string newName) =>
-            client.SendActionAsync(new HttpAction<UserProfile>
+        public Task<PlayerProfile> ChangeName(string accessToken, string newName) =>
+            client.SendActionAsync(new HttpAction<PlayerProfile>
             {
                 Method = HttpMethod.Put,
-                //Host = "https://api.minecraftservices.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.minecraftservices.com",
+                //Host = "http://localhost:7777",
                 Path = $"minecraft/profile/name/{newName}",
 
                 RequestHeaders = new HttpHeaderCollection
@@ -186,7 +186,7 @@ namespace MojangAPI
                 },
 
                 ResponseHandler = atProfileResponseHandler,
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<UserProfile>(),
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>(),
 
                 CheckValidation = (h) =>
                 {
@@ -200,8 +200,8 @@ namespace MojangAPI
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
                 Method = HttpMethod.Post,
-                //Host = "https://api.mojang.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.mojang.com",
+                //Host = "http://localhost:7777",
                 Path = $"user/profile/{uuid}/skin",
 
                 RequestHeaders = new HttpHeaderCollection
@@ -237,13 +237,13 @@ namespace MojangAPI
             Stream fileStream = File.OpenRead(skinPath);
             return UploadSkin(accessToken, skinType, fileStream, filename);
         }
-
+        
         public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, Stream skinStream, string filename) =>
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
                 Method = HttpMethod.Put,
-                //Host = "https://api.minecraftservices.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.minecraftservices.com",
+                //Host = "http://localhost:7777",
                 Path = "minecraft/profile/skins",
 
                 RequestHeaders = new HttpHeaderCollection
@@ -277,8 +277,8 @@ namespace MojangAPI
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
                 Method = HttpMethod.Delete,
-                //Host = "https://api.mojang.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.mojang.com",
+                //Host = "http://localhost:7777",
                 Path = $"user/profile/{uuid}/skin",
 
                 RequestHeaders = new HttpHeaderCollection

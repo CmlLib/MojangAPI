@@ -6,7 +6,7 @@
     <LangVersion>8.0</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Description>Mojang API, Authenticate</Description>
-    <PackageLicenseExpression>mit</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/AlphaBs/MojangAPI</RepositoryUrl>
   </PropertyGroup>
 

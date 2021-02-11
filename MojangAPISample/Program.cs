@@ -9,7 +9,7 @@ namespace MojangAPISample
 {
     class Program
     {
-        static HttpClient httpClient = new HttpClient();
+        static readonly HttpClient httpClient = new HttpClient();
 
         static async Task Main(string[] args)
         {
@@ -35,7 +35,7 @@ namespace MojangAPISample
         static async Task testMojangAPIs(Mojang mojang, Session session)
         {
             Console.WriteLine("GetUUID");
-            UserUUID uuid = await mojang.GetUUID(session.Username);
+            PlayerUUID uuid = await mojang.GetUUID(session.Username);
             printResponse(uuid);
             Console.WriteLine($"UUID: {uuid.UUID}, IsLegacy: {uuid.IsLegacy}, IsDemo: {uuid.IsDemo}\n");
 
@@ -53,13 +53,13 @@ namespace MojangAPISample
             Console.WriteLine();
 
             Console.WriteLine("GetProfileUsingUUID");
-            UserProfile uuidProfile = await mojang.GetProfileUsingUUID(session.UUID);
+            PlayerProfile uuidProfile = await mojang.GetProfileUsingUUID(session.UUID);
             printResponse(uuidProfile);
             printProfile(uuidProfile);
             Console.WriteLine();
 
             Console.WriteLine("GetProfileUsingAccessToken");
-            UserProfile atProfile = await mojang.GetProfileUsingAccessToken(session.AccessToken);
+            PlayerProfile atProfile = await mojang.GetProfileUsingAccessToken(session.AccessToken);
             printResponse(atProfile);
             printProfile(atProfile);
             Console.WriteLine();
@@ -145,15 +145,14 @@ namespace MojangAPISample
                 throw new Exception("failed to get questions");
 
             QuestionList questions = res.Questions;
-            int qCount = 1;
-            foreach (var item in questions)
+            for (int i = 0; i < questions.Count; i++)
             {
-                Console.WriteLine($"Q{qCount}. [{item.QuestionId}] {item.QuestionMessage}");
+                Question question = questions[i];
+                Console.WriteLine($"Q{i + 1}. [{question.QuestionId}] {question.QuestionMessage}");
                 Console.Write("Answer? : ");
 
                 var answer = Console.ReadLine();
-                item.Answer = answer;
-                qCount++;
+                question.Answer = answer;
                 Console.WriteLine();
             }
 
@@ -169,7 +168,7 @@ namespace MojangAPISample
         static async Task test_DANGEROUS_apis(Mojang mojang, Session session)
         {
             Console.WriteLine("ChangeName");
-            UserProfile changeNameProfile = await mojang.ChangeName(session.AccessToken, "NEWNAME");
+            PlayerProfile changeNameProfile = await mojang.ChangeName(session.AccessToken, "NEWNAME");
             printResponse(changeNameProfile);
             printProfile(changeNameProfile);
 
@@ -196,7 +195,7 @@ namespace MojangAPISample
 
         }
 
-        static void printProfile(UserProfile profile)
+        static void printProfile(PlayerProfile profile)
         {
             if (!profile.IsSuccess)
                 return;

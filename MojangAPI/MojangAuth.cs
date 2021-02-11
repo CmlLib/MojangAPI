@@ -256,7 +256,7 @@ namespace MojangAPI
                 ErrorHandler = errorResponseHandler
             });
 
-        public Task<MojangAuthResponse> Invalidte()
+        public Task<MojangAuthResponse> Invalidate()
         {
             Session? cachedSession = cacheManager?.ReadCache();
             if (cachedSession == null || string.IsNullOrEmpty(cachedSession.AccessToken))
@@ -326,7 +326,7 @@ namespace MojangAPI
                 if (!await mojang.CheckGameOwnership(authResponse.AccessToken!))
                     return new MojangAuthResponse(MojangAuthResult.NoProfile);
 
-                UserProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!);
+                PlayerProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!);
                 Session session = new Session
                 {
                     Username = profile.Name,

@@ -21,6 +21,10 @@ else
 }
 ```
 
+### How to get `AccessToken` or `UUID`?
+
+You can get these token by [Mojang Authentication](./MojangAuth.md) or [Microsoft Xbox Authentication](./XboxAuthentication.md)
+
 ### Methods
 
 #### GetUUID
@@ -96,12 +100,14 @@ PlayerProfile profile = await mojang.ChangeName("accessToken", "newName");
 #### ChangeSkin
 
 ```csharp
+// SkinType.Steve or SkinType.Alex
 MojangAPIResponse response = await mojang.ChangeSkin("uuid", "accessToken", SkinType.Steve, "skinUrl");
 ```
 
 #### UploadSkin
 
 ```csharp
+// SkinType.Steve or SkinType.Alex
 MojangAPIResponse response = await mojang.UploadSkin("accessToken", SkinType.Steve, "skin_png_file_path");
 ```
 ```csharp

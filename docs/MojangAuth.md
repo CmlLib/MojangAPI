@@ -1,3 +1,13 @@
+## What is Minecraft `Session`?
+
+`Session` is an authentication information, that contains `AccessToken`, `UUID` and `Username`.  
+`AccessToken` is a temporary token issued after login. ([wiki](https://en.wikipedia.org/wiki/Access_token)).  
+`UUID` is a unique value given to each player. This value cannot be changed. ([wiki](https://en.wikipedia.org/wiki/Universally_unique_identifier))  
+`Username` is player name. This value can be changed by user.  
+
+Some APIs (changing skin or name, etc) require you `Session`, and you can get this by login.  
+`MojangAuth` class provides methods to login.
+
 ## class MojangAuth
 
 Most methods return `MojangAuthResponse` or class inherited from `MojangAuthResponse`.  
@@ -6,6 +16,9 @@ You can check whether the request was successful or failed to check `IsSuccess` 
 If `IsSuccess` is false, `Result`, `Error`, and `ErrorMessage` property tell you why the request failed.  
 
 `MojangAuth` has its own session caching manager. You don't have to type mojang email and password everytime when you login. Login once using your mojang email and password, and `MojangAuth` will save your session information into json file(not contain your raw password, it contains only tokens). Next time when you login just call `TryAutoLogin`. it authenticate you using cached session without typing mojang email and password.
+
+There are two ways to login. One is `Yggdrasil Mojang Authentication` which is described below, and the other is `Microsoft Xbox Authentication` which is new way to login.  
+[Microsoft Xbox Authentication](./XboxAuthentication.md)
 
 Example: 
 

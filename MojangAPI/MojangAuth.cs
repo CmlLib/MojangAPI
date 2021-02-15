@@ -157,6 +157,16 @@ namespace MojangAPI
             return res;
         }
 
+        public async Task<MojangAuthResponse> TryAutoLogin(Session session)
+        {
+            MojangAuthResponse res = await Validate(session);
+
+            if (!res.IsSuccess)
+                res = await Refresh(session);
+
+            return res;
+        }
+
         public Task<MojangAuthResponse> Refresh()
         {
             Session? cachedSession = cacheManager?.ReadCache();

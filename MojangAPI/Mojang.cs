@@ -200,8 +200,8 @@ namespace MojangAPI
                 }
             });
 
-        public Task<UserProfile> ChangeSkin(string uuid, string accessToken, SkinType skinType, string skinUrl) =>
-            client.SendActionAsync(new HttpAction<UserProfile>
+        public Task<PlayerProfile> ChangeSkin(string uuid, string accessToken, SkinType skinType, string skinUrl) =>
+            client.SendActionAsync(new HttpAction<PlayerProfile>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
@@ -227,7 +227,7 @@ namespace MojangAPI
                 },
 
                 ResponseHandler = atProfileResponseHandler,
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<UserProfile>()
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>()
             });
 
         public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, string skinPath)

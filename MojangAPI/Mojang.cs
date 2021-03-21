@@ -166,7 +166,7 @@ namespace MojangAPI
                 Skin = new Skin
                 (
                     url: skinObj?["url"]?.ToString(),
-                    type: skinObj?["alias"]?.ToString()
+                    type: skinObj?["variant"]?.ToString()
                 ),
                 IsLegacy = false
             };
@@ -176,8 +176,7 @@ namespace MojangAPI
             client.SendActionAsync(new HttpAction<UserProfile>
             {
                 Method = HttpMethod.Put,
-                //Host = "https://api.minecraftservices.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.minecraftservices.com",
                 Path = $"minecraft/profile/name/{newName}",
 
                 RequestHeaders = new HttpHeaderCollection
@@ -196,12 +195,11 @@ namespace MojangAPI
                 }
             });
 
-        public Task<MojangAPIResponse> ChangeSkin(string uuid, string accessToken, SkinType skinType, string skinUrl) =>
-            client.SendActionAsync(new HttpAction<MojangAPIResponse>
+        public Task<UserProfile> ChangeSkin(string uuid, string accessToken, SkinType skinType, string skinUrl) =>
+            client.SendActionAsync(new HttpAction<UserProfile>
             {
                 Method = HttpMethod.Post,
-                //Host = "https://api.mojang.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.mojang.com",
                 Path = $"user/profile/{uuid}/skin",
 
                 RequestHeaders = new HttpHeaderCollection
@@ -221,7 +219,10 @@ namespace MojangAPI
                     else if (string.IsNullOrEmpty(accessToken)) return nameof(accessToken);
                     else if (string.IsNullOrEmpty(skinUrl)) return nameof(skinUrl);
                     else return null;
-                }
+                },
+
+                ResponseHandler = atProfileResponseHandler,
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<UserProfile>()
             });
 
         public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, string skinPath)
@@ -241,9 +242,8 @@ namespace MojangAPI
         public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, Stream skinStream, string filename) =>
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
-                Method = HttpMethod.Put,
-                //Host = "https://api.minecraftservices.com",
-                Host = "http://localhost:7777",
+                Method = HttpMethod.Post,
+                Host = "https://api.minecraftservices.com",
                 Path = "minecraft/profile/skins",
 
                 RequestHeaders = new HttpHeaderCollection
@@ -253,8 +253,8 @@ namespace MojangAPI
 
                 Content = new MultipartFormDataContent()
                 {
-                    { new StringContent(skinType.GetModelType()), "model" },
-                    { CreateStreamContent(skinStream, "image/png"), "file", filename }
+                    { new StringContent(skinType.GetModelType()), "\"variant\"" },
+                    { CreateStreamContent(skinStream, "image/png"), "\"file\"", filename }
                 },
 
                 CheckValidation = (h) =>
@@ -263,6 +263,14 @@ namespace MojangAPI
                     else if (string.IsNullOrEmpty(accessToken)) return nameof(accessToken);
                     else if (string.IsNullOrEmpty(filename)) return nameof(filename);
                     else return null;
+                },
+
+                ResponseHandler = async (handler) =>
+                {
+                    var res = await handler.Content.ReadAsStringAsync();
+                    Console.WriteLine(res);
+                    var defaultHandler =  HttpResponseHandlers.GetDefaultResponseHandler<MojangAPIResponse>();
+                    return await defaultHandler.Invoke(handler);
                 }
             });
 
@@ -277,8 +285,8 @@ namespace MojangAPI
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
                 Method = HttpMethod.Delete,
-                //Host = "https://api.mojang.com",
-                Host = "http://localhost:7777",
+                Host = "https://api.mojang.com",
+                //Host = "http://localhost:7777",
                 Path = $"user/profile/{uuid}/skin",
 
                 RequestHeaders = new HttpHeaderCollection

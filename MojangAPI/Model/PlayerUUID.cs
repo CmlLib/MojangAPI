@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace MojangAPI.Model
 {
-    public class UserUUID : MojangAPIResponse
+    public class PlayerUUID : MojangAPIResponse
     {
         public override bool IsSuccess
             => base.IsSuccess

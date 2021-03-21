@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MojangAPI.Model
 {
-    public class UserProfile : MojangAPIResponse
+    public class PlayerProfile : MojangAPIResponse
     {
         public string UUID { get; set; } = "";
         public string Name { get; set; } = "";

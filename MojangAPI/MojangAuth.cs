@@ -157,6 +157,16 @@ namespace MojangAPI
             return res;
         }
 
+        public async Task<MojangAuthResponse> TryAutoLogin(Session session)
+        {
+            MojangAuthResponse res = await Validate(session);
+
+            if (!res.IsSuccess)
+                res = await Refresh(session);
+
+            return res;
+        }
+
         public Task<MojangAuthResponse> Refresh()
         {
             Session? cachedSession = cacheManager?.ReadCache();
@@ -256,7 +266,7 @@ namespace MojangAPI
                 ErrorHandler = errorResponseHandler
             });
 
-        public Task<MojangAuthResponse> Invalidte()
+        public Task<MojangAuthResponse> Invalidate()
         {
             Session? cachedSession = cacheManager?.ReadCache();
             if (cachedSession == null || string.IsNullOrEmpty(cachedSession.AccessToken))
@@ -326,7 +336,7 @@ namespace MojangAPI
                 if (!await mojang.CheckGameOwnership(authResponse.AccessToken!))
                     return new MojangAuthResponse(MojangAuthResult.NoProfile);
 
-                UserProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!);
+                PlayerProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!);
                 Session session = new Session
                 {
                     Username = profile.Name,

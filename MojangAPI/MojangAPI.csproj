@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>8.0</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Description>Mojang API, Authenticate</Description>
+    <Description>.NET Library for Mojang API, Mojang Authentication and Microsoft Xbox Authentication</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/AlphaBs/MojangAPI</RepositoryUrl>
     <Version>1.0.1</Version>

@@ -33,11 +33,11 @@ namespace MojangAPI.SecurityQuestion
 
                 RequestHeaders = new HttpHeaderCollection
                 {
-                    { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException() }
+                    { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException(nameof(accessToken)) }
                 },
 
                 ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(new MojangAPIResponse()),
-                ErrorHandler = null
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
             });
 
         public Task<QuestionFlowResponse> GetQuestionList(string accessToken) =>
@@ -68,7 +68,7 @@ namespace MojangAPI.SecurityQuestion
 
                     return new QuestionFlowResponse(new QuestionList(questions.ToArray()));
                 },
-                ErrorHandler = null
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<QuestionFlowResponse>()
             });
 
         public Task<MojangAPIResponse> SendAnswers(QuestionList list, string accessToken)
@@ -85,11 +85,11 @@ namespace MojangAPI.SecurityQuestion
             JArray jarr = new JArray();
             foreach (var item in list)
             {
-                jarr.Add(new
+                jarr.Add(JObject.FromObject(new
                 {
                     id = item.AnswerId,
                     answer = item.Answer
-                });
+                }));
             }
 
             return client.SendActionAsync(new HttpAction<MojangAPIResponse>
@@ -103,10 +103,10 @@ namespace MojangAPI.SecurityQuestion
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = new StringContent(jarr.ToString()),
+                Content = new StringContent(jarr.ToString(), Encoding.UTF8, "application/json"),
 
                 ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(new MojangAPIResponse()),
-                ErrorHandler = null
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
             });
         }
     }

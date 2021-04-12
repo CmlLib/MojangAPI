@@ -66,6 +66,10 @@ namespace HttpAction
 
                 return result;
             }
+            catch (ArgumentException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 if (httpAction.ErrorHandler != null)

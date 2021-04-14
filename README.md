@@ -20,7 +20,7 @@ Support:
 
 ## Install
 
-Use Nuget package [MojangAPI](https://www.nuget.org/packages/MojangAPI/1.0.0) or download dll from [release](https://github.com/CmlLib/MojangAPI/releases/tag/v1.0.0).
+Use Nuget package [MojangAPI](https://www.nuget.org/packages/MojangAPI) or download dll from [release](https://github.com/CmlLib/MojangAPI/releases).
 
 ## Dependencies
 

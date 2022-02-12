@@ -14,9 +14,7 @@
 
 Support:
 
--   .NET Framework 4.6.2
--   .NET Core 3.1
--   .NET 5.0
+-   netstandard 2.0
 
 ## Install
 

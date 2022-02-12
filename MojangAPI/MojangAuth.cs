@@ -89,7 +89,8 @@ namespace MojangAPI
             try
             {
                 string content = await response.Content.ReadAsStringAsync();
-                MojangAuthResponse authResponse = JsonConvert.DeserializeObject<MojangAuthResponse>(content);
+                MojangAuthResponse authResponse = JsonConvert.DeserializeObject<MojangAuthResponse>(content)
+                    ?? new MojangAuthResponse(MojangAuthResult.UnknownError);
 
                 switch (authResponse.Error)
                 {
@@ -149,18 +150,19 @@ namespace MojangAPI
 
         public async Task<MojangAuthResponse> TryAutoLogin()
         {
-            MojangAuthResponse res = await Validate();
-
-            if (!res.IsSuccess)
-                res = await Refresh();
-
-            return res;
+            Session? cachedSession = cacheManager?.ReadCache();
+            if (cachedSession == null || cachedSession.IsEmpty)
+                return new MojangAuthResponse(MojangAuthResult.InvalidSession);
+            else
+                return await TryAutoLogin(cachedSession);
         }
 
         public async Task<MojangAuthResponse> TryAutoLogin(Session session)
         {
-            MojangAuthResponse res = await Validate(session);
+            if (session.IsEmpty)
+                return new MojangAuthResponse(MojangAuthResult.InvalidSession);
 
+            MojangAuthResponse res = await Validate(session);
             if (!res.IsSuccess)
                 res = await Refresh(session);
 
@@ -215,6 +217,9 @@ namespace MojangAPI
 
         public async Task<MojangAuthResponse> Validate(Session session)
         {
+            if (session.AccessToken == null)
+                throw new ArgumentException("session.AccessToken");
+
             MojangAuthResponse res = await Validate(session.AccessToken, session.ClientToken);
             if (res.IsSuccess)
                 res.Session = session;
@@ -269,7 +274,7 @@ namespace MojangAPI
         public Task<MojangAuthResponse> Invalidate()
         {
             Session? cachedSession = cacheManager?.ReadCache();
-            if (cachedSession == null || string.IsNullOrEmpty(cachedSession.AccessToken))
+            if (cachedSession == null || cachedSession.AccessToken == null)
                 return Task.FromResult(new MojangAuthResponse(MojangAuthResult.InvalidSession));
             else
                 return Invalidate(cachedSession.AccessToken, cachedSession.ClientToken);
@@ -309,7 +314,8 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     string content = await response.Content.ReadAsStringAsync();
-                    MicrosoftAuthResponse authResponse = JsonConvert.DeserializeObject<MicrosoftAuthResponse>(content);
+                    MicrosoftAuthResponse authResponse = JsonConvert.DeserializeObject<MicrosoftAuthResponse>(content)
+                        ?? new MicrosoftAuthResponse();
                     authResponse.ExpiresOn = DateTime.Now.AddSeconds(authResponse.ExpiresIn);
                     return authResponse;
                 },

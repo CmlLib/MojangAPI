@@ -19,7 +19,7 @@ namespace HttpAction
         public Func<HttpResponseMessage, Task<T>> ResponseHandler { get; set; }
             = HttpResponseHandlers.GetDefaultResponseHandler<T>();
 
-        public Func<HttpResponseMessage?, Exception?, Task<T>>? ErrorHandler { get; set; }
+        public Func<HttpResponseMessage, Exception?, Task<T>>? ErrorHandler { get; set; }
             = null;
 
         public virtual Uri CreateUri()

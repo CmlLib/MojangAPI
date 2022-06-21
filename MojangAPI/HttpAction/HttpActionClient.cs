@@ -40,7 +40,7 @@ namespace HttpAction
                     httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
 
                 HttpResponseMessage response
-                    = await client.SendAsync((HttpRequestMessage)httpAction, httpCompletionOption, cancellationToken);
+                    = await client.SendAsync(httpAction, httpCompletionOption, cancellationToken);
 
                 T result;
                 if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
@@ -69,13 +69,6 @@ namespace HttpAction
             catch (ArgumentException)
             {
                 throw;
-            }
-            catch (Exception ex)
-            {
-                if (httpAction.ErrorHandler != null)
-                    return await httpAction.ErrorHandler(null, ex);
-                else
-                    throw;
             }
         }
     }

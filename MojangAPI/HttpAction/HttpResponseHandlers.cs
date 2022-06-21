@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-#nullable disable
-
 namespace HttpAction
 {
     public class HttpResponseHandlers
@@ -68,9 +66,38 @@ namespace HttpAction
                     throw new Exception();
             };
 
-        public static Func<HttpResponseMessage, Exception, Task<T>> GetJsonErrorHandler<T>() =>
-            (response, ex) =>
-            GetJsonHandler<T>().Invoke(response);
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>() where T : new() => GetJsonErrorHandler(new T());
+
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj) =>
+            async (response, ex) =>
+            {
+                // 
+                if (ex == null)
+                {
+                    try
+                    {
+                        var resBody = await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrEmpty(resBody))
+                        {
+                            var obj = JsonConvert.DeserializeObject<T>(resBody, new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore,
+                            });
+                            if (obj != null)
+                                return obj;
+                        }
+                    }
+                    catch
+                    {
+                        // ignore exception to execute next error handler
+                    }
+                }
+
+                response.EnsureSuccessStatusCode();
+                if (ex != null)
+                    throw ex;
+                return defaultObj;
+            };
 
         public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>() =>
             async (response) =>
@@ -84,11 +111,10 @@ namespace HttpAction
                 });
             };
 
-        public static Func<HttpResponseMessage, Exception, Task<T>> GetDefaultErrorHandler<T>() =>
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetDefaultErrorHandler<T>() =>
             (response, ex) =>
             {
-                if (response != null)
-                    response.EnsureSuccessStatusCode();
+                response.EnsureSuccessStatusCode();
                 if (ex != null)
                     throw ex;
 

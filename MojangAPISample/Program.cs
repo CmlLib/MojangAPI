@@ -4,213 +4,134 @@ using System.Net.Http;
 using MojangAPI;
 using MojangAPI.Model;
 using MojangAPI.SecurityQuestion;
+using System.Net;
+using CmlLib.Core.Auth.Microsoft.MsalClient;
+using Microsoft.Identity.Client;
+using CmlLib.Core.Auth;
 
 namespace MojangAPISample
 {
     class Program
     {
-        static readonly HttpClient httpClient = new HttpClient();
+        static int success = 0;
+        static int fail = 0;
 
         static async Task Main(string[] args)
         {
+            var clientHandler = new HttpClientHandler();
+            //clientHandler.Proxy = new WebProxy("127.0.0.1:8080");
+            //var loggingHandler = new LoggingHandler(clientHandler);
+            
+            var httpClient = new HttpClient(clientHandler);
+
             Mojang mojang = new Mojang(httpClient);
             MojangAuth auth = new MojangAuth(httpClient);
             QuestionFlow qflow = new QuestionFlow(httpClient);
-            Session session = new Session()
-            {
-                AccessToken = "at123",
-                UUID = "test_uuid123",
-                Username = "test_user123"
-            };
-            
-            session = await testMojangAuth(auth);
-            await testMojangAPIs(mojang, session);
-            await testSecurityFlow(qflow, session);
-            //await test_DANGEROUS_apis(mojang, session);
 
-            Console.WriteLine("Done");
+            MSession session;
+            bool useXboxAccount = true;
+            if (useXboxAccount)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("LoginMode: Xbox");
+                Console.ForegroundColor = ConsoleColor.White;
+                session = await loginXbox();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine("LoginMode: Mojang");
+                Console.ForegroundColor = ConsoleColor.White;
+                session = await TestMojangAuth.Test(auth);
+            }
+
+            await testMojangApi(mojang, session, false);
+
+            Console.WriteLine();
+            Console.WriteLine("Done! Test result: ");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("SUCCESS: " + success);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("FAIL: " + fail);
+            Console.ForegroundColor = ConsoleColor.White;
             Console.ReadLine();
         }
 
-        static async Task testMojangAPIs(Mojang mojang, Session session)
+        static async Task testMojangApi(Mojang mojang, MSession session, bool includeDangerousApis)
         {
-            Console.WriteLine("GetUUID");
-            PlayerUUID uuid = await mojang.GetUUID(session.Username);
-            printResponse(uuid);
-            Console.WriteLine($"UUID: {uuid.UUID}, IsLegacy: {uuid.IsLegacy}, IsDemo: {uuid.IsDemo}\n");
+            var tester = new TestMojangApi(mojang, session);
 
-            Console.WriteLine("GetNameHistories");
-            NameHistoryResponse historyRes = await mojang.GetNameHistories(session.UUID);
-            printResponse(historyRes);
-            if (historyRes.IsSuccess)
+            await testMethod("GetUUID", () => tester.TestGetUUID());
+            await testMethod("GetNameHistories", () => tester.TestGetNameHistories());
+            await testMethod("GetProfileUsingUUID", () => tester.TestGetProfileUsingUUID());
+            await testMethod("GetProfileUsingAccessToken", () => tester.TestGetProfileUsingAccessToken());
+            await testMethod("GetPlayerAttributes", () => tester.TestGetPlayerAttributes());
+            await testMethod("GetBlocklist", () => tester.TestGetBlocklist());
+            await testMethod("GetPlayerCertificates", () => tester.TestGetPlayerCertificates());
+            await testMethod("GetBlockServers", () => tester.TestGetBlockServers());
+            await testMethod("CheckGameOwnership", () => tester.TestCheckGameOwnership());
+            await testMethod("GetStatistics", () => tester.TestGetStatistics());
+
+            if (includeDangerousApis)
             {
-                foreach (var item in historyRes.Histories)
-                {
-                    Console.WriteLine($"[{item.ChangedTime}] {item.Name}");
-                }
+                await testMethod("ChangeName", () => tester.TestChangeName());
+                await testMethod("ChangeSkin", () => tester.TestChangeSkin());
+                await testMethod("UploadSkin", () => tester.TestUploadSkin());
+                await testMethod("ResetSkin", () => tester.TestResetSkin());
             }
-            Console.WriteLine();
-
-            Console.WriteLine("GetProfileUsingUUID");
-            PlayerProfile uuidProfile = await mojang.GetProfileUsingUUID(session.UUID);
-            printResponse(uuidProfile);
-            printProfile(uuidProfile);
-            Console.WriteLine();
-
-            Console.WriteLine("GetProfileUsingAccessToken");
-            PlayerProfile atProfile = await mojang.GetProfileUsingAccessToken(session.AccessToken);
-            printResponse(atProfile);
-            printProfile(atProfile);
-            Console.WriteLine();
-
-            Console.WriteLine("GetBlockedServers");
-            string[] servers = await mojang.GetBlockedServer();
-            Console.WriteLine($"There are {servers.Length} blocked servers");
-            Console.WriteLine();
-
-            Console.WriteLine("CheckGameOwnership");
-            bool checkGameOwnership = await mojang.CheckGameOwnership(session.AccessToken);
-            Console.WriteLine(checkGameOwnership);
-            Console.WriteLine();
-
-            Console.WriteLine("GetStatistics");
-            Statistics stat = await mojang.GetStatistics(StatisticOption.ItemSoldMinecraft, StatisticOption.ItemSoldDungeons);
-            printResponse(stat);
-            Console.WriteLine($"Total: {stat.Total}, Last24: {stat.Last24h}, Velocity/s: {stat.SaleVelocityPerSeconds}");
-            Console.WriteLine();
         }
 
-        static async Task<Session> testMojangAuth(MojangAuth auth)
+        static async Task<MSession> loginXbox()
         {
-            MojangAuthResponse res;
+            MSession session;
 
-            Console.WriteLine("TryAutoLogin");
-            res = await auth.TryAutoLogin();
-            printAuthResponse(res);
-            Console.WriteLine();
-
-            if (res.IsSuccess)
-                return res.Session;
-
-            Console.WriteLine("Authenticate");
-            Console.Write("Email : ");
-            var email = Console.ReadLine();
-            Console.Write("Password : ");
-            var pw = Console.ReadLine();
-
-            res = await auth.Authenticate(email, pw); // fill your mojang email and password
-            printAuthResponse(res);
-            Console.WriteLine();
-
-            if (!res.IsSuccess)
-                throw new Exception("failed to login");
-
-            return res.Session;
-        }
-
-        static async Task<Session> testMicrosoftAuth(MojangAuth auth, string uhs, string xstsToken)
-        {
-            MojangAuthResponse res;
-
-            Console.WriteLine("LoginWithXbox");
-            res = await auth.RequestSessionWithXbox(uhs, xstsToken);
-            printAuthResponse(res);
-
-            if (!res.IsSuccess)
-                throw new Exception("failed to login");
-
-            return res.Session;
-        }
-
-        static async Task testSecurityFlow(QuestionFlow q, Session session)
-        {
-            MojangAPIResponse trusted = await q.CheckTrusted(session.AccessToken);
-            printResponse(trusted);
-
-            if (trusted.IsSuccess)
+            var app = MsalMinecraftLoginHelper.CreateDefaultApplicationBuilder("499c8d36-be2a-4231-9ebd-ef291b7bb64c").Build();
+            var handler = new MsalMinecraftLoginHandler(app);
+            try
             {
-                Console.WriteLine("Your IP was trusted. You don't have to answer security questions.");
-                Console.WriteLine();
-                return;
+                session = await handler.LoginSilent();
+            }
+            catch (MsalUiRequiredException)
+            {
+                session = await handler.LoginInteractive();
             }
 
-            Console.WriteLine("!! You have to answer security questions !!");
+            return session;
+        }
+
+        static async Task testMethod(string name, Func<Task<bool>> task)
+        {
             Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"[{name}] Start test");
+            Console.ForegroundColor = ConsoleColor.White;
 
-            QuestionFlowResponse res = await q.GetQuestionList(session.AccessToken);
-            printResponse(res);
-
-            if (!res.IsSuccess)
-                throw new Exception("failed to get questions");
-
-            QuestionList questions = res.Questions;
-            for (int i = 0; i < questions.Count; i++)
+            bool result = false;
+            try
             {
-                Question question = questions[i];
-                Console.WriteLine($"Q{i + 1}. [{question.QuestionId}] {question.QuestionMessage}");
-                Console.Write("Answer? : ");
-
-                var answer = Console.ReadLine();
-                question.Answer = answer;
-                Console.WriteLine();
+                result = await task.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine($"[{name}] Exception!");
+                Console.WriteLine(ex);
             }
 
-            MojangAPIResponse answerResponse = await q.SendAnswers(questions, session.AccessToken);
-            printResponse(answerResponse);
-
-            if (answerResponse.IsSuccess)
-                return;
+            if (result)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"[{name}] SUCCESS");
+                success++;
+            }
             else
-                throw new Exception();
-        }
-
-        static async Task test_DANGEROUS_apis(Mojang mojang, Session session)
-        {
-            Console.WriteLine("ChangeName");
-            PlayerProfile changeNameProfile = await mojang.ChangeName(session.AccessToken, "NEWNAME");
-            printResponse(changeNameProfile);
-            printProfile(changeNameProfile);
-
-            Console.WriteLine("ChangeSkin");
-            MojangAPIResponse changeSkinRes = await mojang.ChangeSkin(session.UUID, session.AccessToken, SkinType.Steve, "https://google.com/favcon.ico");
-            printResponse(changeSkinRes);
-
-            Console.WriteLine("UploadSkin");
-            MojangAPIResponse uploadSkinRes = await mojang.UploadSkin(session.AccessToken, SkinType.Steve, "skin.png");
-            printResponse(uploadSkinRes);
-
-            Console.WriteLine("ResetSkin");
-            MojangAPIResponse resetSkinRes = await mojang.ResetSkin(session.UUID, session.AccessToken);
-            printResponse(resetSkinRes);
-        }
-
-        static void printResponse(MojangAPIResponse res)
-        {
-            Console.WriteLine($"IsSuccess: {res.IsSuccess}, StatusCode: {res.StatusCode}");
-            if (!res.IsSuccess)
             {
-                Console.WriteLine($"Error: {res.Error}, ErrorMessage: {res.ErrorMessage}");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[{name}] FAIL");
+                fail++;
             }
 
-        }
-
-        static void printProfile(PlayerProfile profile)
-        {
-            if (!profile.IsSuccess)
-                return;
-
-            Console.WriteLine($"{profile.UUID}: {profile.Name}, IsLegacy: {profile.IsLegacy}");
-            Console.WriteLine($"SKIN: {profile.Skin.Url}, {profile.Skin.Model}");
-        }
-
-        static void printAuthResponse(MojangAuthResponse res)
-        {
-            Console.WriteLine($"IsSuccess: {res.IsSuccess}, StatusCode: {res.StatusCode}");
-            if (!res.IsSuccess)
-                Console.WriteLine($"Error: {res.Error}, ErrorMessage: {res.ErrorMessage}");
-            else
-                Console.WriteLine($"Username: {res.Session.Username}, UUID: {res.Session.UUID}, " +
-                    $"AccessToken: {res.Session.AccessToken.Substring(0,7)}...");
+            Console.ForegroundColor = ConsoleColor.White;
         }
     }
 }

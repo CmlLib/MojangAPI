@@ -1,9 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CmlLib.Core.Auth.Microsoft.MsalClient" Version="1.1.1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MojangAPI\MojangAPI.csproj" />

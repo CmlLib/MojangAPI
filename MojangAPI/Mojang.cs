@@ -9,27 +9,19 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace MojangAPI
 {
     public class Mojang
     {
-        private static HttpClient? _defaultClient;
-        internal static HttpClient DefaultClient
-        {
-            get
-            {
-                if (_defaultClient == null)
-                    _defaultClient = new HttpClient();
-                return _defaultClient;
-            }
-        }
+        internal static Lazy<HttpClient> DefaultClient = new Lazy<HttpClient>(() => new HttpClient());
 
         private HttpClient client;
 
         public Mojang()
         {
-            client = DefaultClient;
+            client = DefaultClient.Value;
         }
 
         public Mojang(HttpClient client)
@@ -93,7 +85,8 @@ namespace MojangAPI
                 Method = HttpMethod.Get,
                 Host = "https://sessionserver.mojang.com",
                 Path = $"session/minecraft/profile/{uuid ?? throw new ArgumentNullException()}",
-                ResponseHandler = uuidProfileResponseHandler
+                ResponseHandler = uuidProfileResponseHandler,
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>()
             });
 
         private async Task<PlayerProfile> uuidProfileResponseHandler(HttpResponseMessage response)
@@ -129,7 +122,7 @@ namespace MojangAPI
                 SkinType? defaultSkinType = null;
                 if (string.IsNullOrEmpty(uuid))
                     defaultSkinType = Skin.GetDefaultSkinType(uuid ?? "");
-                
+
                 skin = new Skin(null, defaultSkinType);
             }
 
@@ -154,7 +147,8 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException() }
                 },
 
-                ResponseHandler = atProfileResponseHandler
+                ResponseHandler = atProfileResponseHandler,
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>()
             });
 
         private async Task<PlayerProfile> atProfileResponseHandler(HttpResponseMessage response)
@@ -176,6 +170,81 @@ namespace MojangAPI
                 IsLegacy = false
             };
         }
+
+        public Task<PlayerAttributes> GetPlayerAttributes(string accessToken) =>
+            client.SendActionAsync(new HttpAction<PlayerAttributes>
+            {
+                Method = HttpMethod.Get,
+                Host = "https://api.minecraftservices.com",
+                Path = "players/attributes",
+
+                RequestHeaders = new HttpHeaderCollection
+                {
+                    { "Authorization", "Bearer " + accessToken }
+                },
+
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerAttributes>(),
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerAttributes>()
+            });
+
+        public Task<string[]?> GetPlayerBlocklist(string accessToken) =>
+            client.SendActionAsync(new HttpAction<string[]?>
+            {
+                Method = HttpMethod.Get,
+                Host = "https://api.minecraftservices.com",
+                Path = "privacy/blocklist",
+
+                RequestHeaders = new HttpHeaderCollection
+                {
+                    { "Authorization", "Bearer " + accessToken }
+                },
+
+                ResponseHandler = async (res) =>
+                {
+                    var resbody = await res.Content.ReadAsStringAsync();
+                    var job = JObject.Parse(resbody);
+                    var arr = (JArray?)job["blockedProfiles"];
+                    return arr?.Select(x => x.ToString())?.ToArray();
+                },
+                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<string[]?>()
+            });
+
+        public Task<PlayerCertificates> GetPlayerCertificates(string accessToken) =>
+            client.SendActionAsync(new HttpAction<PlayerCertificates>
+            {
+                Method = HttpMethod.Post,
+                Host = "https://api.minecraftservices.com",
+                Path = "player/certificates",
+
+                RequestHeaders = new HttpHeaderCollection
+                {
+                    { "Authorization", "Bearer " + accessToken }
+                },
+
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerCertificates>(),
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerCertificates>()
+            });
+
+        public Task<string?> CheckNameAvailability(string accessToken, string newName) =>
+            client.SendActionAsync(new HttpAction<string?>
+            {
+                Method = HttpMethod.Get,
+                Host = "https://api.minecraftservices.com",
+                Path = $"minecraft/profile/name/{newName}/available",
+
+                RequestHeaders = new HttpHeaderCollection
+                {
+                    { "Authorization", "Bearer " + accessToken }
+                },
+
+                ResponseHandler = async (res) =>
+                {
+                    var resbody = await res.Content.ReadAsStringAsync();
+                    var job = JObject.Parse(resbody);
+                    return job["status"]?.ToString();
+                },
+                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<string?>()
+            });
 
         public Task<PlayerProfile> ChangeName(string accessToken, string newName) =>
             client.SendActionAsync(new HttpAction<PlayerProfile>
@@ -204,18 +273,18 @@ namespace MojangAPI
             client.SendActionAsync(new HttpAction<PlayerProfile>
             {
                 Method = HttpMethod.Post,
-                Host = "https://api.mojang.com",
-                Path = $"user/profile/{uuid}/skin",
+                Host = "https://api.minecraftservices.com",
+                Path = "minecraft/profile/skins",
 
                 RequestHeaders = new HttpHeaderCollection
                 {
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                Content = new JsonHttpContent(new
                 {
-                    { "model", skinType.GetModelType() },
-                    { "url", skinUrl }
+                    variant = skinType.GetModelType(),
+                    url = skinUrl
                 }),
 
                 CheckValidation = (h) =>
@@ -243,7 +312,7 @@ namespace MojangAPI
             Stream fileStream = File.OpenRead(skinPath);
             return UploadSkin(accessToken, skinType, fileStream, filename);
         }
-        
+
         public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, Stream skinStream, string filename) =>
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
@@ -273,10 +342,10 @@ namespace MojangAPI
                 ResponseHandler = async (handler) =>
                 {
                     var res = await handler.Content.ReadAsStringAsync();
-                    Console.WriteLine(res);
-                    var defaultHandler =  HttpResponseHandlers.GetDefaultResponseHandler<MojangAPIResponse>();
+                    var defaultHandler = HttpResponseHandlers.GetDefaultResponseHandler<MojangAPIResponse>();
                     return await defaultHandler.Invoke(handler);
-                }
+                },
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
             });
 
         private StreamContent CreateStreamContent(Stream stream, string contentType)
@@ -290,9 +359,8 @@ namespace MojangAPI
             client.SendActionAsync(new HttpAction<MojangAPIResponse>
             {
                 Method = HttpMethod.Delete,
-                Host = "https://api.mojang.com",
-                //Host = "http://localhost:7777",
-                Path = $"user/profile/{uuid}/skin",
+                Host = "https://api.minecraftservices.com/",
+                Path = $"minecraft/profile/skins/active",
 
                 RequestHeaders = new HttpHeaderCollection
                 {
@@ -304,7 +372,9 @@ namespace MojangAPI
                     if (string.IsNullOrEmpty(uuid)) return nameof(uuid);
                     else if (string.IsNullOrEmpty(accessToken)) return nameof(accessToken);
                     else return null;
-                }
+                },
+
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
             });
 
         public Task<string[]> GetBlockedServer() =>
@@ -318,7 +388,8 @@ namespace MojangAPI
                 {
                     string content = await response.Content.ReadAsStringAsync();
                     return content.Split('\n').Select(x => x.Trim()).ToArray();
-                }
+                },
+                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<string[]>()
             });
 
         public Task<Statistics> GetStatistics(params StatisticOption[] options) =>
@@ -334,7 +405,10 @@ namespace MojangAPI
                 Content = new JsonHttpContent(new
                 {
                     metricKeys = options
-                })
+                }),
+
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler<Statistics>(),
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<Statistics>()
             });
 
         public Task<bool> CheckGameOwnership(string accessToken) =>

@@ -16,7 +16,7 @@ namespace MojangAPI.SecurityQuestion
 
         public QuestionFlow()
         {
-            client = Mojang.DefaultClient;
+            client = Mojang.DefaultClient.Value;
         }
 
         public QuestionFlow(HttpClient client)
@@ -68,7 +68,7 @@ namespace MojangAPI.SecurityQuestion
 
                     return new QuestionFlowResponse(new QuestionList(questions.ToArray()));
                 },
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<QuestionFlowResponse>()
+                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<QuestionFlowResponse>()
             });
 
         public Task<MojangAPIResponse> SendAnswers(QuestionList list, string accessToken)

@@ -23,7 +23,7 @@ namespace MojangAPI
         public MojangAuth(HttpClient? httpClient, ICacheManager<Session>? _cacheManager)
         {
             if (httpClient == null)
-                this.client = Mojang.DefaultClient;
+                this.client = Mojang.DefaultClient.Value;
             else
                 this.client = httpClient;
 

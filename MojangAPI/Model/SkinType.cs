@@ -10,7 +10,7 @@ namespace MojangAPI.Model
         Alex
     }
 
-    static class Extension
+    public static class SkinTypeExtension
     {
         public static string GetModelType(this SkinType skinType)
         {

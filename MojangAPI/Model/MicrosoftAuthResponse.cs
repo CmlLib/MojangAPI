@@ -1,30 +1,26 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
     public class MicrosoftAuthResponse : HttpAction.ActionResponse
     {
-        public override bool IsSuccess
-            => base.IsSuccess
-            && !string.IsNullOrEmpty(AccessToken);
-
-        [JsonProperty("username")]
+        [JsonPropertyName("username")]
         public string? Username { get; set; }
 
-        [JsonProperty("roles")]
+        [JsonPropertyName("roles")]
         public string[]? Roles { get; set; }
 
-        [JsonProperty("access_token")]
+        [JsonPropertyName("access_token")]
         public string? AccessToken { get; set; }
 
-        [JsonProperty("token_type")]
+        [JsonPropertyName("token_type")]
         public string? TokenType { get; set; }
 
-        [JsonProperty("expires_in")]
+        [JsonPropertyName("expires_in")]
         public int ExpiresIn { get; set; }
 
-        [JsonProperty("expires_on")]
+        [JsonPropertyName("expires_on")]
         public DateTime ExpiresOn { get; set; }
     }
 }

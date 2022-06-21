@@ -14,26 +14,15 @@ namespace MojangAPISample
 
         public static async Task Test(QuestionFlow q, MSession session)
         {
-            MojangAPIResponse trusted = await q.CheckTrusted(session.AccessToken);
-            printResponse(trusted);
-
-            if (trusted.IsSuccess)
-            {
-                Console.WriteLine("Your IP was trusted. You don't have to answer security questions.");
-                Console.WriteLine();
-                return;
-            }
+            await q.CheckTrusted(session.AccessToken);
+            Console.WriteLine("Your IP was trusted. You don't have to answer security questions.");
+            Console.WriteLine();
 
             Console.WriteLine("!! You have to answer security questions !!");
             Console.WriteLine();
 
-            QuestionFlowResponse res = await q.GetQuestionList(session.AccessToken);
-            printResponse(res);
+            QuestionList questions = await q.GetQuestionList(session.AccessToken);
 
-            if (!res.IsSuccess)
-                throw new Exception("failed to get questions");
-
-            QuestionList questions = res.Questions;
             for (int i = 0; i < questions.Count; i++)
             {
                 Question question = questions[i];
@@ -45,23 +34,7 @@ namespace MojangAPISample
                 Console.WriteLine();
             }
 
-            MojangAPIResponse answerResponse = await q.SendAnswers(questions, session.AccessToken);
-            printResponse(answerResponse);
-
-            if (answerResponse.IsSuccess)
-                return;
-            else
-                throw new Exception();
-        }
-
-        private static bool printResponse(MojangAPIResponse res)
-        {
-            Console.WriteLine($"IsSuccess: {res.IsSuccess}, StatusCode: {res.StatusCode}");
-            if (!res.IsSuccess)
-            {
-                Console.WriteLine($"Error: {res.Error}, ErrorMessage: {res.ErrorMessage}");
-            }
-            return res.IsSuccess;
+            await q.SendAnswers(questions, session.AccessToken);
         }
     }
 }

@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace HttpAction
 {
@@ -21,55 +18,48 @@ namespace HttpAction
 
         public static async Task<T> SendActionAsync<T>(this HttpClient client, HttpAction<T> httpAction, HttpCompletionOption httpCompletionOption, CancellationToken cancellationToken)
         {
-            try
+            if (httpAction.ResponseHandler == null)
+                throw new ArgumentNullException("httpAction.ResponseHandler");
+
+            if (httpAction.CheckValidation != null)
             {
-                if (httpAction.ResponseHandler == null)
-                    throw new ArgumentNullException("httpAction.ResponseHandler");
-
-                if (httpAction.CheckValidation != null)
-                {
-                    string? valid = httpAction.CheckValidation(httpAction);
-                    if (!string.IsNullOrEmpty(valid))
-                        throw new ArgumentException("Invalid Request : " + valid);
-                }
-
-                if (httpAction.RequestUri == null)
-                    httpAction.RequestUri = httpAction.CreateUri();
-
-                if (httpAction.RequestHeaders != null)
-                    httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
-
-                HttpResponseMessage response
-                    = await client.SendAsync(httpAction, httpCompletionOption, cancellationToken);
-
-                T result;
-                if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
-                {
-                    try
-                    {
-                        result = await httpAction.ResponseHandler(response);
-                    }
-                    catch (Exception e)
-                    {
-                        if (httpAction.ErrorHandler != null)
-                            result = await httpAction.ErrorHandler(response, e);
-                        else
-                            throw;
-                    }
-                }
-                else
-                    result = await httpAction.ErrorHandler(response, null);
-
-                ActionResponse? actionResponse = result as ActionResponse;
-                if (actionResponse != null)
-                    actionResponse.StatusCode = (int)response.StatusCode;
-
-                return result;
+                string? valid = httpAction.CheckValidation(httpAction);
+                if (!string.IsNullOrEmpty(valid))
+                    throw new ArgumentException("Invalid Request : " + valid);
             }
-            catch (ArgumentException)
+
+            if (httpAction.RequestUri == null)
+                httpAction.RequestUri = httpAction.CreateUri();
+
+            if (httpAction.RequestHeaders != null)
+                httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
+
+            HttpResponseMessage response
+                = await client.SendAsync(httpAction, httpCompletionOption, cancellationToken);
+
+            T result;
+            if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
             {
-                throw;
+                try
+                {
+                    result = await httpAction.ResponseHandler(response);
+                }
+                catch (Exception e)
+                {
+                    if (httpAction.ErrorHandler != null)
+                        result = await httpAction.ErrorHandler(response, e);
+                    else
+                        throw;
+                }
             }
+            else
+                result = await httpAction.ErrorHandler(response, null);
+
+            ActionResponse? actionResponse = result as ActionResponse;
+            if (actionResponse != null)
+                actionResponse.StatusCode = (int)response.StatusCode;
+
+            return result;
         }
     }
 }

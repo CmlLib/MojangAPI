@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
@@ -9,22 +9,22 @@ namespace MojangAPI.Model
     {
         public class PlayerKeyPair
         {
-            [JsonProperty("privateKey")]
+            [JsonPropertyName("privateKey")]
             public string? PrivateKey { get; set; }
-            [JsonProperty("publicKey")]
+            [JsonPropertyName("publicKey")]
             public string? PublicKey { get; set; }
         }
 
-        [JsonProperty("keyPair")]
+        [JsonPropertyName("keyPair")]
         public PlayerKeyPair? KeyPair { get; set; }
 
-        [JsonProperty("publicKeySignature")]
+        [JsonPropertyName("publicKeySignature")]
         public string? PublicKeySignature { get; set; }
 
-        [JsonProperty("ExpiresAt")]
+        [JsonPropertyName("ExpiresAt")]
         public DateTime? ExpiresAt { get; set; }
 
-        [JsonProperty("RefreshedAfter")]
+        [JsonPropertyName("RefreshedAfter")]
         public DateTime? RefreshedAfter { get; set; }
     }
 }

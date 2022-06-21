@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
     public class PlayerProfanityFilterPreferences
     {
-        [JsonProperty("profanityFilterOn")]
+        [JsonPropertyName("profanityFilterOn")]
         public bool ProfanityFilterOn { get; set; }
     }
 }

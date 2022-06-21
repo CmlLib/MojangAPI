@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
-using System.Text;
 
 namespace HttpAction
 {
     public class HttpHeaderCollection : IEnumerable<KeyValuePair<string, string>>
     {
-        private Dictionary<string, List<string>> Headers = new Dictionary<string, List<string>>();
+        private readonly Dictionary<string, List<string>> Headers = new Dictionary<string, List<string>>();
 
         public void Add(string key, string value)
         {

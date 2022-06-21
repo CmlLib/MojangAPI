@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MojangAPI.Model
 {
-    public class Statistics : MojangAPIResponse
+    public class Statistics
     {
         public int Total { get; set; }
         public int Last24h { get; set; }

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using System.IO;
+using System.Text.Json;
 
 namespace MojangAPI.Cache
 {
@@ -26,7 +22,7 @@ namespace MojangAPI.Cache
             try
             {
                 string filecontent = File.ReadAllText(CacheFilePath);
-                return JsonConvert.DeserializeObject<T>(filecontent);
+                return JsonSerializer.Deserialize<T>(filecontent);
             }
             catch
             {
@@ -38,7 +34,10 @@ namespace MojangAPI.Cache
         {
             try
             {
-                File.WriteAllText(CacheFilePath, JsonConvert.SerializeObject(obj));
+                var dirPath = Path.GetDirectoryName(CacheFilePath);
+                if (!string.IsNullOrEmpty(dirPath))
+                    Directory.CreateDirectory(dirPath);
+                File.WriteAllText(CacheFilePath, JsonSerializer.Serialize(obj));
             }
             catch
             {

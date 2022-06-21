@@ -28,7 +28,7 @@ namespace MojangAPISample
             MojangAuth auth = new MojangAuth(httpClient);
             QuestionFlow qflow = new QuestionFlow(httpClient);
 
-            MSession session;
+            MSession session = new MSession("asdf", "bds", "ewafdf");
             bool useXboxAccount = true;
             if (useXboxAccount)
             {
@@ -71,6 +71,7 @@ namespace MojangAPISample
             await testMethod("GetBlockServers", () => tester.TestGetBlockServers());
             await testMethod("CheckGameOwnership", () => tester.TestCheckGameOwnership());
             await testMethod("GetStatistics", () => tester.TestGetStatistics());
+            await testMethod("CheckNameAvailability", () => tester.TestCheckNameAvailability());
 
             if (includeDangerousApis)
             {

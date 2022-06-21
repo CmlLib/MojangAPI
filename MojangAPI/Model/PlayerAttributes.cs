@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
     public class PlayerAttributes
     {
-        [JsonProperty("privileges")]
+        [JsonPropertyName("privileges")]
         public PlayerPrivileges? Privileges { get; set; }
 
-        [JsonProperty("profanityFilterPreferences")]
+        [JsonPropertyName("profanityFilterPreferences")]
         public PlayerProfanityFilterPreferences? ProfanityFilterPreferences { get;set;}
     }
 }

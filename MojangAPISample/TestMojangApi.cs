@@ -23,41 +23,34 @@ namespace MojangAPISample
         public async Task<bool> TestGetUUID()
         {
             PlayerUUID uuid = await mojang.GetUUID(session.Username);
-            printResponse(uuid);
             Console.WriteLine($"UUID: {uuid.UUID}, IsLegacy: {uuid.IsLegacy}, IsDemo: {uuid.IsDemo}");
-            return uuid.IsSuccess;
+            return true;
         }
 
         public async Task<bool> TestGetNameHistories()
         {
-            NameHistoryResponse historyRes = await mojang.GetNameHistories(session.UUID);
-            printResponse(historyRes);
-            if (historyRes.IsSuccess)
+            NameHistory[] histories = await mojang.GetNameHistories(session.UUID);
+            Console.WriteLine("Count: " + histories);
+            foreach (var item in histories)
             {
-                Console.WriteLine("Count: " + historyRes.Histories.Length);
-                foreach (var item in historyRes.Histories)
-                {
-                    Console.WriteLine($"{item.ChangedTime}: {item.Name}");
-                }
+                Console.WriteLine($"{item.ChangedTime}: {item.Name}");
             }
-            return historyRes.IsSuccess;
+            return true;
         }
 
         public async Task<bool> TestGetProfileUsingUUID()
         {
             PlayerProfile uuidProfile = await mojang.GetProfileUsingUUID(session.UUID);
-            printResponse(uuidProfile);
             printProfile(uuidProfile);
-            return uuidProfile.IsSuccess;
+            return true;
         }
 
         public async Task<bool> TestGetProfileUsingAccessToken()
         {
             note("This api only works on xbox account");
             PlayerProfile atProfile = await mojang.GetProfileUsingAccessToken(session.AccessToken);
-            printResponse(atProfile);
             printProfile(atProfile);
-            return atProfile.IsSuccess;
+            return true;
         }
 
         public async Task<bool> TestGetPlayerAttributes()
@@ -99,6 +92,10 @@ namespace MojangAPISample
         public async Task<bool> TestGetBlockServers()
         {
             string[] servers = await mojang.GetBlockedServer();
+            for (int i = 0; i < 5 && i < servers.Length; i++)
+            {
+                Console.WriteLine(servers[i]);
+            }
             Console.WriteLine($"There are {servers.Length} blocked servers");
             return true;
         }
@@ -118,59 +115,49 @@ namespace MojangAPISample
         {
             note("This api only works on xbox account");
             PlayerProfile changeNameProfile = await mojang.ChangeName(session.AccessToken, "NEWNAME");
-            printResponse(changeNameProfile);
             printProfile(changeNameProfile);
-            return changeNameProfile.IsSuccess;
+            return true;
         }
 
         public async Task<bool> TestChangeSkin()
         {
             note("This api only works on xbox account");
-            MojangAPIResponse changeSkinRes = await mojang.ChangeSkin(session.UUID, session.AccessToken, SkinType.Alex, SkinTemplates.AlexUrl);
-            printResponse(changeSkinRes);
-            return changeSkinRes.IsSuccess;
+            await mojang.ChangeSkin(session.UUID, session.AccessToken, SkinType.Alex, SkinTemplates.AlexUrl);
+            return true;
         }
 
         public async Task<bool> TestUploadSkin()
         {
             note("This api only works on xbox account");
-            MojangAPIResponse uploadSkinRes = await mojang.UploadSkin(session.AccessToken, SkinType.Steve, "skin.png");
-            printResponse(uploadSkinRes);
-            return uploadSkinRes.IsSuccess;
+            await mojang.UploadSkin(session.AccessToken, SkinType.Steve, "skin.png");
+            return true;
         }
 
         public async Task<bool> TestResetSkin()
         {
             note("This api only works on xbox account");
-            MojangAPIResponse resetSkinRes = await mojang.ResetSkin(session.UUID, session.AccessToken);
-            printResponse(resetSkinRes);
-            return resetSkinRes.IsSuccess;
+            await mojang.ResetSkin(session.UUID, session.AccessToken);
+            return true;
         }
 
         public async Task<bool> TestGetStatistics()
         {
             note("This service was closed down by Mojang. It may not work.");
             Statistics stat = await mojang.GetStatistics(StatisticOption.ItemSoldMinecraft, StatisticOption.ItemSoldDungeons);
-            printResponse(stat);
             Console.WriteLine($"Total: {stat.Total}, Last24: {stat.Last24h}, Velocity/s: {stat.SaleVelocityPerSeconds}");
-            return stat.IsSuccess;
+            return true;
         }
 
-        private bool printResponse(MojangAPIResponse res)
+        public async Task<bool> TestCheckNameAvailability()
         {
-            Console.WriteLine($"IsSuccess: {res.IsSuccess}, StatusCode: {res.StatusCode}");
-            if (!res.IsSuccess)
-            {
-                Console.WriteLine($"Error: {res.Error}, ErrorMessage: {res.ErrorMessage}");
-            }
-            return res.IsSuccess;
+            string newName = "NEWNAME123";
+            string result = await mojang.CheckNameAvailability(session.AccessToken, newName);
+            Console.WriteLine($"{newName}: {result}");
+            return true;
         }
 
         private void printProfile(PlayerProfile profile)
         {
-            if (!profile.IsSuccess)
-                return;
-
             Console.WriteLine($"{profile.UUID}: {profile.Name}, IsLegacy: {profile.IsLegacy}");
             Console.WriteLine($"SKIN: {profile.Skin.Url}, {profile.Skin.Model}");
         }

@@ -1,37 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
-    public class PlayerUUID : MojangAPIResponse
+    public class PlayerUUID
     {
-        public override bool IsSuccess
-            => base.IsSuccess
-            && CheckUserExistence();
-
-        private bool CheckUserExistence()
-        {
-            if (StatusCode != 200)
-            {
-                Error = "NoPlayer";
-                return false;
-            }
-            else
-                return true;
-        }
-
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string? UUID { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string? CurrentUsername { get; set; }
 
-        [JsonProperty("legacy")]
+        [JsonPropertyName("legacy")]
         public bool IsLegacy { get; set; } = false;
 
-        [JsonProperty("demo")]
+        [JsonPropertyName("demo")]
         public bool IsDemo { get; set; } = false;
     }
 }

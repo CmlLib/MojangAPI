@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
@@ -12,15 +12,9 @@ namespace MojangAPI.Model
             this.Result = result;
         }
 
-        public override bool IsSuccess
-            => base.IsSuccess
-            && this.Result == MojangAuthResult.Success
-            && string.IsNullOrEmpty(Error)
-            && string.IsNullOrEmpty(ErrorMessage);
-
-        [JsonProperty("error")]
+        [JsonPropertyName("error")]
         public string? Error { get; set; }
-        [JsonProperty("message")]
+        [JsonPropertyName("message")]
         public string? ErrorMessage { get; set; }
 
         public MojangAuthResult Result { get; set; }

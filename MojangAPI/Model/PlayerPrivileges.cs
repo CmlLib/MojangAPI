@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
     public class PlayerPrivileges
     {
-        [JsonProperty("onlineChat")]
+        [JsonPropertyName("onlineChat")]
         public bool OnlineChat { get; set; }
 
-        [JsonProperty("multiplayerServer")]
+        [JsonPropertyName("multiplayerServer")]
         public bool MultiplayerServer { get; set; }
 
-        [JsonProperty("multiplayerRealms")]
+        [JsonPropertyName("multiplayerRealms")]
         public bool MultiplayerRealms { get; set; }
 
-        [JsonProperty("telemtry")]
+        [JsonPropertyName("telemtry")]
         public bool Telemtry { get; set; }
     }
 }

@@ -6,7 +6,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using HttpAction;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace MojangAPI.SecurityQuestion
 {
@@ -24,8 +25,8 @@ namespace MojangAPI.SecurityQuestion
             this.client = client;
         }
 
-        public Task<MojangAPIResponse> CheckTrusted(string accessToken) =>
-            client.SendActionAsync(new HttpAction<MojangAPIResponse>
+        public Task CheckTrusted(string accessToken) =>
+            client.SendActionAsync(new HttpAction<bool>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
@@ -36,12 +37,12 @@ namespace MojangAPI.SecurityQuestion
                     { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException(nameof(accessToken)) }
                 },
 
-                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(new MojangAPIResponse()),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
+                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
+                ErrorHandler = MojangException.GetMojangErrorHandler<bool>()
             });
 
-        public Task<QuestionFlowResponse> GetQuestionList(string accessToken) =>
-            client.SendActionAsync(new HttpAction<QuestionFlowResponse>
+        public Task<QuestionList> GetQuestionList(string accessToken) =>
+            client.SendActionAsync(new HttpAction<QuestionList>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
@@ -55,23 +56,23 @@ namespace MojangAPI.SecurityQuestion
                 ResponseHandler = async (response) =>
                 {
                     string content = await response.Content.ReadAsStringAsync();
-                    JArray jarr = JArray.Parse(content);
+                    using var doc = JsonDocument.Parse(content);
 
                     List<Question> questions = new List<Question>(3);
-                    foreach (var item in jarr)
+                    foreach (var item in doc.RootElement.EnumerateArray())
                     {
                         questions.Add(new Question(
-                            questionId: int.Parse(item["question"]?["id"]?.ToString() ?? ""),
-                            questionMsg: item["question"]?["question"]?.ToString(),
-                            answerId: int.Parse(item["answer"]?["id"]?.ToString() ?? "")));
+                            questionId: int.Parse(item.GetProperty("question").GetProperty("id").GetRawText()),
+                            questionMsg: item.GetProperty("question").GetProperty("question").GetString(),
+                            answerId: int.Parse(item.GetProperty("answer").GetProperty("id").GetRawText())));
                     }
 
-                    return new QuestionFlowResponse(new QuestionList(questions.ToArray()));
+                    return new QuestionList(questions.ToArray());
                 },
-                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<QuestionFlowResponse>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<QuestionList>()
             });
 
-        public Task<MojangAPIResponse> SendAnswers(QuestionList list, string accessToken)
+        public Task<bool> SendAnswers(QuestionList list, string accessToken)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
@@ -82,17 +83,17 @@ namespace MojangAPI.SecurityQuestion
             if (!list.CheckAllAnswered())
                 throw new ArgumentException("Not all answered");
 
-            JArray jarr = new JArray();
+            var jarr = new JsonArray();
             foreach (var item in list)
             {
-                jarr.Add(JObject.FromObject(new
+                jarr.Add(new JsonObject
                 {
-                    id = item.AnswerId,
-                    answer = item.Answer
-                }));
+                    ["id"] = item.AnswerId,
+                    ["answer"] = item.Answer
+                }); 
             }
 
-            return client.SendActionAsync(new HttpAction<MojangAPIResponse>
+            return client.SendActionAsync(new HttpAction<bool>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
@@ -103,10 +104,10 @@ namespace MojangAPI.SecurityQuestion
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = new StringContent(jarr.ToString(), Encoding.UTF8, "application/json"),
+                Content = new StringContent(jarr.ToJsonString(), Encoding.UTF8, "application/json"),
 
-                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(new MojangAPIResponse()),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
+                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<bool>()
             });
         }
     }

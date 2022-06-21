@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace HttpAction
 {
@@ -34,9 +28,9 @@ namespace HttpAction
 
         public static string serialize(object obj)
         {
-            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings
+            return JsonSerializer.Serialize(obj, new JsonSerializerOptions
             {
-                NullValueHandling = NullValueHandling.Ignore
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             });
         }
     }

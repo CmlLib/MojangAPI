@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace HttpAction
 {
@@ -66,6 +63,11 @@ namespace HttpAction
                     throw new Exception();
             };
 
+        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>() where T : new() => GetJsonErrorHandler(new T());
 
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj) =>
@@ -79,10 +81,7 @@ namespace HttpAction
                         var resBody = await response.Content.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(resBody))
                         {
-                            var obj = JsonConvert.DeserializeObject<T>(resBody, new JsonSerializerSettings
-                            {
-                                NullValueHandling = NullValueHandling.Ignore,
-                            });
+                            var obj = JsonSerializer.Deserialize<T>(resBody, jsonSerializerOptions);
                             if (obj != null)
                                 return obj;
                         }
@@ -105,10 +104,7 @@ namespace HttpAction
                 string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
                     res = "{}";
-                return JsonConvert.DeserializeObject<T>(res, new JsonSerializerSettings
-                {
-                    NullValueHandling = NullValueHandling.Ignore
-                });
+                return JsonSerializer.Deserialize<T>(res, jsonSerializerOptions);
             };
 
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetDefaultErrorHandler<T>() =>
@@ -121,19 +117,19 @@ namespace HttpAction
                 return Task.FromResult(default(T));
             };
 
-        private static JsonSerializer defaultSerializer = new JsonSerializer
-        {
-            NullValueHandling = NullValueHandling.Ignore
-        };
-
         public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>() =>
             async (response) =>
             {
                 string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
                     res = "[]";
-                JArray jarr = JArray.Parse(res);
-                return jarr.Select(x => x.ToObject<T>(defaultSerializer)).ToArray();
+
+                using var doc = JsonDocument.Parse(res);
+                var root = doc.RootElement;
+
+                return root.EnumerateArray()
+                    .Select(elem => elem.Deserialize<T>(jsonSerializerOptions))
+                    .ToArray();
             };
     }
 }

@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
     public class NameHistory
     {
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string? Name { get; set; }
 
-        [JsonProperty("changedToAt")]
+        [JsonPropertyName("changedToAt")]
         public long? ChangedToAt { get; set; }
 
         public DateTime ChangedTime

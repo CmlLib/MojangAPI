@@ -1,10 +1,9 @@
 ﻿using HttpAction;
 using MojangAPI.Cache;
 using MojangAPI.Model;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MojangAPI
@@ -64,19 +63,19 @@ namespace MojangAPI
         private async Task<MojangAuthResponse> authResponseHandler(HttpResponseMessage response)
         {
             string content = await response.Content.ReadAsStringAsync();
-            JObject job = JObject.Parse(content);
+            using var doc = JsonDocument.Parse(content);
+            var root = doc.RootElement;
 
-            var selectedProfile = job["selectedProfile"];
-            if (selectedProfile == null)
+            if (!root.TryGetProperty("selectedProfile", out var selectedProfile))
                 return new MojangAuthResponse(MojangAuthResult.NoProfile);
 
             return new MojangAuthResponse(MojangAuthResult.Success)
             {
                 Session = new Session
                 {
-                    AccessToken = job["accessToken"]?.ToString(),
-                    UUID = selectedProfile["id"]?.ToString(),
-                    Username = selectedProfile["name"]?.ToString()
+                    AccessToken = root.GetProperty("accessToken").GetString(),
+                    UUID = selectedProfile.GetProperty("id").GetString(),
+                    Username = selectedProfile.GetProperty("name").GetString()
                 }
             };
         }
@@ -89,7 +88,7 @@ namespace MojangAPI
             try
             {
                 string content = await response.Content.ReadAsStringAsync();
-                MojangAuthResponse authResponse = JsonConvert.DeserializeObject<MojangAuthResponse>(content)
+                MojangAuthResponse authResponse = JsonSerializer.Deserialize<MojangAuthResponse>(content)
                     ?? new MojangAuthResponse(MojangAuthResult.UnknownError);
 
                 switch (authResponse.Error)
@@ -314,7 +313,7 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     string content = await response.Content.ReadAsStringAsync();
-                    MicrosoftAuthResponse authResponse = JsonConvert.DeserializeObject<MicrosoftAuthResponse>(content)
+                    MicrosoftAuthResponse authResponse = JsonSerializer.Deserialize<MicrosoftAuthResponse>(content)
                         ?? new MicrosoftAuthResponse();
                     authResponse.ExpiresOn = DateTime.Now.AddSeconds(authResponse.ExpiresIn);
                     return authResponse;

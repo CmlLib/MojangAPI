@@ -1,15 +1,12 @@
 ﻿using HttpAction;
 using MojangAPI.Model;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace MojangAPI
 {
@@ -34,7 +31,8 @@ namespace MojangAPI
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
-                Path = $"users/profiles/minecraft/{username ?? throw new ArgumentNullException(nameof(username))}"
+                Path = $"users/profiles/minecraft/{username ?? throw new ArgumentNullException(nameof(username))}",
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID>()
             });
 
         public Task<PlayerUUID> GetUUID(string username, DateTimeOffset timestamp) =>
@@ -50,11 +48,13 @@ namespace MojangAPI
                 Queries = new HttpQueryCollection
                 {
                     { "timestamp", timestamp.ToString() }
-                }
+                },
+
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID>()
             });
 
-        public Task<NameHistoryResponse> GetNameHistories(string uuid) =>
-            client.SendActionAsync(new HttpAction<NameHistoryResponse>
+        public Task<NameHistory[]> GetNameHistories(string uuid) =>
+            client.SendActionAsync(new HttpAction<NameHistory[]>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.mojang.com",
@@ -62,21 +62,20 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
-                    var histories = await handler.Invoke(response);
-                    return new NameHistoryResponse(histories);
+                    return await handler.Invoke(response);
                 },
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<NameHistoryResponse>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<NameHistory[]>()
             });
 
-        public Task<PlayerUUID[]?> GetUUIDs(string[] usernames) =>
-            client.SendActionAsync(new HttpAction<PlayerUUID[]?>
+        public Task<PlayerUUID[]> GetUUIDs(string[] usernames) =>
+            client.SendActionAsync(new HttpAction<PlayerUUID[]>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
                 Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException()),
                 ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<PlayerUUID>(),
-                ErrorHandler = (res, ex) => Task.FromResult<PlayerUUID[]?>(null)
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID[]>()
             });
 
         public Task<PlayerProfile> GetProfileUsingUUID(string uuid) =>
@@ -86,53 +85,45 @@ namespace MojangAPI
                 Host = "https://sessionserver.mojang.com",
                 Path = $"session/minecraft/profile/{uuid ?? throw new ArgumentNullException()}",
                 ResponseHandler = uuidProfileResponseHandler,
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
         private async Task<PlayerProfile> uuidProfileResponseHandler(HttpResponseMessage response)
         {
-            string responseContent = await response.Content.ReadAsStringAsync();
-            JObject job = JObject.Parse(responseContent);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            using var document = JsonDocument.Parse(responseContent);
+            var root = document.RootElement;
 
-            string? uuid = job["id"]?.ToString();
-            string name = job["name"]?.ToString() ?? "";
-            bool legacy = job["legacy"]?.ToString()?.ToLower() == "true";
-            Skin? skin = null;
-
-            var propValue = job["properties"]?[0]?["value"];
-            if (propValue != null)
+            var profile = root.Deserialize<PlayerProfile>() ?? new PlayerProfile();
+            
+            try
             {
-                var decoded = Convert.FromBase64String(propValue.ToString());
-                JObject propObj = JObject.Parse(Encoding.UTF8.GetString(decoded));
+                var innerValue = root.GetProperty("properties")
+                                     .EnumerateArray()
+                                     .First()
+                                     .GetProperty("value")
+                                     .GetString();
 
-                var skinObj = propObj["textures"]?["SKIN"];
+                var decoded = Convert.FromBase64String(innerValue);
+                using var skinDocument = JsonDocument.Parse(decoded);
+                var skinRoot = skinDocument.RootElement;
 
-                if (skinObj != null)
-                {
-                    skin = new Skin
-                    (
-                        url: skinObj["url"]?.ToString(),
-                        type: skinObj["metadata"]?["model"]?.ToString()
-                    );
-                }
+                var skinObj = skinRoot.GetProperty("textures").GetProperty("SKIN");
+                var skinUrl = skinObj.GetProperty("url").GetString();
+                var skinType = skinObj.GetProperty("metadata").GetProperty("model").GetString();
+
+                profile.Skin = new Skin(skinUrl, skinType);
             }
-
-            if (skin == null)
+            catch
             {
                 SkinType? defaultSkinType = null;
-                if (string.IsNullOrEmpty(uuid))
-                    defaultSkinType = Skin.GetDefaultSkinType(uuid ?? "");
+                if (string.IsNullOrEmpty(profile?.UUID))
+                    defaultSkinType = Skin.GetDefaultSkinType(profile!.UUID!);
 
-                skin = new Skin(null, defaultSkinType);
+                profile!.Skin = new Skin(null, defaultSkinType);
             }
 
-            return new PlayerProfile
-            {
-                UUID = uuid ?? "",
-                Name = name,
-                Skin = skin,
-                IsLegacy = legacy
-            };
+            return profile;
         }
 
         public Task<PlayerProfile> GetProfileUsingAccessToken(string accessToken) =>
@@ -144,31 +135,38 @@ namespace MojangAPI
 
                 RequestHeaders = new HttpHeaderCollection
                 {
-                    { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException() }
+                    { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException() },
                 },
 
                 ResponseHandler = atProfileResponseHandler,
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
         private async Task<PlayerProfile> atProfileResponseHandler(HttpResponseMessage response)
         {
             string responseContent = await response.Content.ReadAsStringAsync();
-            JObject job = JObject.Parse(responseContent);
+            using var doc = JsonDocument.Parse(responseContent);
+            var root = doc.RootElement;
 
-            var skinObj = job["skins"]?[0];
+            var profile = root.Deserialize<PlayerProfile>() ?? new PlayerProfile();
 
-            return new PlayerProfile
+            try
             {
-                UUID = job["id"]?.ToString() ?? "",
-                Name = job["name"]?.ToString() ?? "",
-                Skin = new Skin
-                (
-                    url: skinObj?["url"]?.ToString(),
-                    type: skinObj?["variant"]?.ToString()
-                ),
-                IsLegacy = false
-            };
+                var skinObj = root.GetProperty("skins").EnumerateArray().First();
+                var skinUrl = skinObj.GetProperty("url").GetString();
+                var skinType = skinObj.GetProperty("variant").GetString();
+                profile.Skin = new Skin(skinUrl, skinType);
+            }
+            catch
+            {
+                SkinType? defaultSkinType = null;
+                if (string.IsNullOrEmpty(profile?.UUID))
+                    defaultSkinType = Skin.GetDefaultSkinType(profile!.UUID!);
+
+                profile!.Skin = new Skin(null, defaultSkinType);
+            }
+
+            return profile;
         }
 
         public Task<PlayerAttributes> GetPlayerAttributes(string accessToken) =>
@@ -184,11 +182,11 @@ namespace MojangAPI
                 },
 
                 ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerAttributes>(),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerAttributes>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerAttributes>()
             });
 
-        public Task<string[]?> GetPlayerBlocklist(string accessToken) =>
-            client.SendActionAsync(new HttpAction<string[]?>
+        public Task<string[]> GetPlayerBlocklist(string accessToken) =>
+            client.SendActionAsync(new HttpAction<string[]>
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.minecraftservices.com",
@@ -202,11 +200,14 @@ namespace MojangAPI
                 ResponseHandler = async (res) =>
                 {
                     var resbody = await res.Content.ReadAsStringAsync();
-                    var job = JObject.Parse(resbody);
-                    var arr = (JArray?)job["blockedProfiles"];
-                    return arr?.Select(x => x.ToString())?.ToArray();
+                    using var doc = JsonDocument.Parse(resbody);
+                    return doc.RootElement.GetProperty("blockedProfiles")
+                                          .EnumerateArray()
+                                          .Select(elem => elem.GetString())
+                                          .Where(elem => !string.IsNullOrEmpty(elem))
+                                          .ToArray()!;
                 },
-                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<string[]?>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<string[]>()
             });
 
         public Task<PlayerCertificates> GetPlayerCertificates(string accessToken) =>
@@ -222,7 +223,7 @@ namespace MojangAPI
                 },
 
                 ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerCertificates>(),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerCertificates>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerCertificates>()
             });
 
         public Task<string?> CheckNameAvailability(string accessToken, string newName) =>
@@ -240,10 +241,10 @@ namespace MojangAPI
                 ResponseHandler = async (res) =>
                 {
                     var resbody = await res.Content.ReadAsStringAsync();
-                    var job = JObject.Parse(resbody);
-                    return job["status"]?.ToString();
+                    using var doc = JsonDocument.Parse(resbody);
+                    return doc.RootElement.GetProperty("status").GetString();
                 },
-                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<string?>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<string?>()
             });
 
         public Task<PlayerProfile> ChangeName(string accessToken, string newName) =>
@@ -259,7 +260,7 @@ namespace MojangAPI
                 },
 
                 ResponseHandler = atProfileResponseHandler,
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>(),
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>(),
 
                 CheckValidation = (h) =>
                 {
@@ -296,10 +297,10 @@ namespace MojangAPI
                 },
 
                 ResponseHandler = atProfileResponseHandler,
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<PlayerProfile>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
-        public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, string skinPath)
+        public Task UploadSkin(string accessToken, SkinType skinType, string skinPath)
         {
             if (string.IsNullOrEmpty(accessToken))
                 throw new ArgumentNullException(nameof(accessToken));
@@ -313,8 +314,8 @@ namespace MojangAPI
             return UploadSkin(accessToken, skinType, fileStream, filename);
         }
 
-        public Task<MojangAPIResponse> UploadSkin(string accessToken, SkinType skinType, Stream skinStream, string filename) =>
-            client.SendActionAsync(new HttpAction<MojangAPIResponse>
+        public Task UploadSkin(string accessToken, SkinType skinType, Stream skinStream, string filename) =>
+            client.SendActionAsync(new HttpAction<bool>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.minecraftservices.com",
@@ -339,13 +340,8 @@ namespace MojangAPI
                     else return null;
                 },
 
-                ResponseHandler = async (handler) =>
-                {
-                    var res = await handler.Content.ReadAsStringAsync();
-                    var defaultHandler = HttpResponseHandlers.GetDefaultResponseHandler<MojangAPIResponse>();
-                    return await defaultHandler.Invoke(handler);
-                },
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
+                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
+                ErrorHandler = MojangException.GetMojangErrorHandler<bool>()
             });
 
         private StreamContent CreateStreamContent(Stream stream, string contentType)
@@ -355,8 +351,8 @@ namespace MojangAPI
             return content;
         }
 
-        public Task<MojangAPIResponse> ResetSkin(string uuid, string accessToken) =>
-            client.SendActionAsync(new HttpAction<MojangAPIResponse>
+        public Task ResetSkin(string uuid, string accessToken) =>
+            client.SendActionAsync(new HttpAction<bool>
             {
                 Method = HttpMethod.Delete,
                 Host = "https://api.minecraftservices.com/",
@@ -374,7 +370,8 @@ namespace MojangAPI
                     else return null;
                 },
 
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<MojangAPIResponse>()
+                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
+                ErrorHandler = MojangException.GetMojangErrorHandler<bool>()
             });
 
         public Task<string[]> GetBlockedServer() =>
@@ -389,7 +386,7 @@ namespace MojangAPI
                     string content = await response.Content.ReadAsStringAsync();
                     return content.Split('\n').Select(x => x.Trim()).ToArray();
                 },
-                ErrorHandler = HttpResponseHandlers.GetDefaultErrorHandler<string[]>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<string[]>()
             });
 
         public Task<Statistics> GetStatistics(params StatisticOption[] options) =>
@@ -408,7 +405,7 @@ namespace MojangAPI
                 }),
 
                 ResponseHandler = HttpResponseHandlers.GetJsonHandler<Statistics>(),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<Statistics>()
+                ErrorHandler = MojangException.GetMojangErrorHandler<Statistics>()
             });
 
         public Task<bool> CheckGameOwnership(string accessToken) =>
@@ -426,10 +423,8 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
-                    JObject job = JObject.Parse(responseContent);
-
-                    var itemsCount = (job["items"] as JArray)?.Count ?? 0;
-                    return itemsCount != 0;
+                    using var doc = JsonDocument.Parse(responseContent);
+                    return doc.RootElement.GetProperty("items").EnumerateArray().Any();
                 },
                 ErrorHandler = (res, ex) => Task.FromResult(false)
             });

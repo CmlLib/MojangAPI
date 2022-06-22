@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace MojangAPI.Cache
 {
-    public class JsonFileCacheManager<T> : ICacheManager<T>
+    public class JsonFileCacheManager<T> : ICacheManager<T> where T : new()
     {
         public string CacheFilePath { get; private set; }
 
@@ -12,7 +12,7 @@ namespace MojangAPI.Cache
             this.CacheFilePath = filepath;
         }
 
-        public virtual T GetDefaultObject() => default(T);
+        public virtual T GetDefaultObject() => new T();
 
         public T ReadCache()
         {
@@ -22,7 +22,7 @@ namespace MojangAPI.Cache
             try
             {
                 string filecontent = File.ReadAllText(CacheFilePath);
-                return JsonSerializer.Deserialize<T>(filecontent);
+                return JsonSerializer.Deserialize<T>(filecontent) ?? new T();
             }
             catch
             {

@@ -44,11 +44,11 @@ namespace MojangAPI
 
                 string? error = null;
                 string? errorMessage = null;
-                if (root.TryGetProperty("error", out var errorProp)
-                    && errorProp.ValueKind == JsonValueKind.String)
+                if (root.TryGetProperty("error", out var errorProp) &&
+                    errorProp.ValueKind == JsonValueKind.String)
                     error = errorProp.GetString();
-                if (root.TryGetProperty("errorMessage", out var errorMessageProp)
-                    && errorMessageProp.ValueKind == JsonValueKind.String)
+                if (root.TryGetProperty("errorMessage", out var errorMessageProp) && 
+                    errorMessageProp.ValueKind == JsonValueKind.String)
                     errorMessage = errorMessageProp.GetString();
 
                 if (string.IsNullOrEmpty(error) && string.IsNullOrEmpty(errorMessage))

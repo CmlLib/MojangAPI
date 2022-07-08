@@ -32,17 +32,10 @@ namespace MojangAPI.Cache
 
         public void SaveCache(T obj)
         {
-            try
-            {
-                var dirPath = Path.GetDirectoryName(CacheFilePath);
-                if (!string.IsNullOrEmpty(dirPath))
-                    Directory.CreateDirectory(dirPath);
-                File.WriteAllText(CacheFilePath, JsonSerializer.Serialize(obj));
-            }
-            catch
-            {
-
-            }
+            var dirPath = Path.GetDirectoryName(CacheFilePath);
+            if (!string.IsNullOrEmpty(dirPath))
+                Directory.CreateDirectory(dirPath);
+            File.WriteAllText(CacheFilePath, JsonSerializer.Serialize(obj));
         }
     }
 }

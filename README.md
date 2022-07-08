@@ -20,11 +20,6 @@ Support:
 
 Use Nuget package [MojangAPI](https://www.nuget.org/packages/MojangAPI) or download dll from [release](https://github.com/CmlLib/MojangAPI/releases).
 
-## Dependencies
-
--   Newtonsoft.Json
--   System.Net.Http
-
 ## Usage
 
 Include these namespaces : 

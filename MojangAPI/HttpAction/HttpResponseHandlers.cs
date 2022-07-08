@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace HttpAction
 {
-    public class HttpResponseHandlers
+    public static class HttpResponseHandlers
     {
         public static Func<HttpResponseMessage, Task<T>> GetDefaultResponseHandler<T>()
         {
@@ -60,7 +60,7 @@ namespace HttpAction
                 if (response.IsSuccessStatusCode)
                     return Task.FromResult(returnObj);
                 else
-                    throw new Exception();
+                    throw new HttpRequestException();
             };
 
         private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions

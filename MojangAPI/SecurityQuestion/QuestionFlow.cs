@@ -13,7 +13,7 @@ namespace MojangAPI.SecurityQuestion
 {
     public class QuestionFlow
     {
-        private HttpClient client;
+        private-readonly HttpClient client;
 
         public QuestionFlow()
         {

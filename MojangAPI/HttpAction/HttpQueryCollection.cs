@@ -6,7 +6,7 @@ namespace HttpAction
 {
     public class HttpQueryCollection : IEnumerable<string>
     {
-        private Dictionary<string, List<string>> Queries = new Dictionary<string, List<string>>();
+        private readonly Dictionary<string, List<string>> Queries = new Dictionary<string, List<string>>();
 
         public void Add(string key, string value)
         {

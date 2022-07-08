@@ -12,7 +12,7 @@ namespace MojangAPI.Cache
 
         public override Session GetDefaultObject()
         {
-            return new Session()
+            return new Session
             {
                 ClientToken = Guid.NewGuid().ToString()
             };

@@ -14,9 +14,9 @@ namespace MojangAPI.Model
         public string? CurrentUsername { get; set; }
 
         [JsonPropertyName("legacy")]
-        public bool IsLegacy { get; set; } = false;
+        public bool IsLegacy { get; set; }
 
         [JsonPropertyName("demo")]
-        public bool IsDemo { get; set; } = false;
+        public bool IsDemo { get; set; }
     }
 }

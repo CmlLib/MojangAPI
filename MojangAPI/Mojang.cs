@@ -12,9 +12,9 @@ namespace MojangAPI
 {
     public class Mojang
     {
-        internal static Lazy<HttpClient> DefaultClient = new Lazy<HttpClient>(() => new HttpClient());
+        internal static readonly Lazy<HttpClient> DefaultClient = new Lazy<HttpClient>(() => new HttpClient());
 
-        private HttpClient client;
+        private readonly HttpClient client;
 
         public Mojang()
         {
@@ -326,13 +326,13 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = new MultipartFormDataContent()
+                Content = new MultipartFormDataContent
                 {
                     { new StringContent(skinType.GetModelType()), "\"variant\"" },
                     { CreateStreamContent(skinStream, "image/png"), "\"file\"", filename }
                 },
 
-                CheckValidation = (h) =>
+                CheckValidation = _ =>
                 {
                     if (skinStream == null) return nameof(skinStream);
                     else if (string.IsNullOrEmpty(accessToken)) return nameof(accessToken);
@@ -363,7 +363,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                CheckValidation = (h) =>
+                CheckValidation = _ =>
                 {
                     if (string.IsNullOrEmpty(uuid)) return nameof(uuid);
                     else if (string.IsNullOrEmpty(accessToken)) return nameof(accessToken);

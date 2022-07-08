@@ -18,7 +18,7 @@ namespace MojangAPI.SecurityQuestion
         public Question this[int index] => questions[index];
         public int Count => questions.Count;
 
-        List<Question> questions;
+        private readonly List<Question> questions;
 
         public Question GetQuestion(int index) => this[index];
 

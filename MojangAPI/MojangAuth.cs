@@ -10,8 +10,8 @@ namespace MojangAPI
 {
     public class MojangAuth
     {
-        private HttpClient client;
-        private ICacheManager<Session>? cacheManager;
+        private readonly HttpClient client;
+        private readonly ICacheManager<Session>? cacheManager;
 
         public MojangAuth() : this(null) { }
 
@@ -133,8 +133,8 @@ namespace MojangAPI
                         version = 1
                     },
                     username = email,
-                    password = password,
-                    clientToken = clientToken
+                    password,
+                    clientToken
                 }),
 
                 CheckValidation = (h) =>
@@ -233,8 +233,8 @@ namespace MojangAPI
 
                 Content = new JsonHttpContent(new
                 {
-                    accessToken = accessToken,
-                    clientToken = clientToken
+                    accessToken,
+                    clientToken
                 }),
 
                 CheckValidation = (h) =>

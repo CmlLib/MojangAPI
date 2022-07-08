@@ -5,7 +5,7 @@ using System.IO;
 
 namespace MojangAPI
 {
-    class Util
+    static class Util
     {
         internal static string ReplaceInvalidChars(string filename)
         {

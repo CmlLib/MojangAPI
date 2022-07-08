@@ -2,6 +2,15 @@
 
 [wiki.vg](https://wiki.vg/Microsoft_Authentication_Scheme)
 
+### Notice
+
+Use [CmlLib.Core.Auth.Microsoft](https://github.com/CmlLib/CmlLib.Core.Auth.Microsoft) library.  
+Microsoft xbox authenticating feature is updated only in CmlLib.Core.Auth.Microsoft library. 
+
+### Reference
+
+**This method is obsoleted. use CmlLib.Core.Auth.Microsoft**
+
 [MojangAuth](./MojangAuth.md) provides methods to authenticate with Minecraft using Xbox game token.  
 But it does not provide `Microsoft OAuth Flow` and `Xbox Authentication`.  
 Use another library like [XboxAuthNet](https://github.com/AlphaBs/XboxAuthNet) or [xbox-webapi-csharp](https://github.com/OpenXbox/xbox-webapi-csharp).

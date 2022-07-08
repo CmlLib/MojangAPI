@@ -1,6 +1,6 @@
 ## What is Minecraft `Session`?
 
-`Session` is an authentication information, that contains `AccessToken`, `UUID` and `Username`.  
+`Session` is an authentication information, containing `AccessToken`, `UUID` and `Username`.  
 `AccessToken` is a temporary token issued after login. ([wiki](https://en.wikipedia.org/wiki/Access_token)).  
 `UUID` is a unique value given to each player. This value cannot be changed. ([wiki](https://en.wikipedia.org/wiki/Universally_unique_identifier))  
 `Username` is player name. This value can be changed by user.  

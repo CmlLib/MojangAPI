@@ -13,19 +13,14 @@ Example:
 HttpClient httpClient = new HttpClient();
 QuestionFlow questionFlow = new QuestionFlow(httpClient);
 
-MojangAPIResponse trusted = await questionFlow.CheckTrusted("accessToken");
-
-if (trusted.IsSuccess)
+try
 {
+    await questionFlow.CheckTrusted("accessToken");
     Console.WriteLine("Your IP was trusted");
 }
-else
+catch
 {
-    QuestionFlowResponse res = await questionFlow.GetQuestionList("accessToken");
-    if (!res.IsSuccess)
-        throw new Exception("failed to get questions");
-
-    QuestionList questions = res.Questions;
+    QuestionList questions = await questionFlow.GetQuestionList("accessToken");
     for (int i = 0; i < questions.Count; i++)
     {
         Question question = questions[i];
@@ -37,18 +32,8 @@ else
         Console.WriteLine();
     }
 
-    MojangAPIResponse answerResponse = await questionFlow.SendAnswers(questions, session.AccessToken);
-
-    if (answerResponse.IsSuccess)
-    {
-        Console.WriteLine("Success");
-    }
-    else
-    {
-        Console.WriteLine("Failed");
-        // answerResponse.Error
-        // answerResponse.ErrorMessage
-    }
+    await questionFlow.SendAnswers(questions, session.AccessToken);
+    Console.WriteLine("Success");
 }
 ```
 
@@ -59,12 +44,12 @@ else
 Check if security questions are needed.
 
 ```csharp
-MojangAPIResponse response = await questionFlow.CheckTrusted("accessToken");
-if (response.IsSuccess)
+try
 {
+    await questionFlow.CheckTrusted("accessToken");
     // trusted
 }
-else
+catch 
 {
     // security questions are needed
 }
@@ -73,22 +58,13 @@ else
 #### GetQuestionList
 
 ```csharp
-QuestionFlowResponse res = await questionFlow.GetQuestionList("accessToken");
-if (res.IsSuccess) 
+QuestionList questionList = await questionFlow.GetQuestionList("accessToken");
+foreach (Question q in questionList)
 {
-    QuestionList questionList = res.Questions;
-    foreach (Question q in questionList)
-    {
-        // q.QuestionId
-        // q.QuestionMessage
-        // q.AnswerId
-        // q.Answer
-    }
-}
-else
-{
-    // res.Error
-    // res.ErrorMessage
+    // q.QuestionId
+    // q.QuestionMessage
+    // q.AnswerId
+    // q.Answer
 }
 ```
 
@@ -96,5 +72,5 @@ else
 
 ```csharp
 QuestionList list; // you can get this from GetQuestionsList method, like 'questionList' variable above.
-MojangAPIResponse res = await questionFlow.SendAnswers(list, "accessToken");
+await questionFlow.SendAnswers(list, "accessToken");
 ```

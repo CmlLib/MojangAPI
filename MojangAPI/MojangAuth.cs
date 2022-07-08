@@ -301,6 +301,7 @@ namespace MojangAPI
                 ErrorHandler = errorResponseHandler
             });
 
+        [Obsolete("Use CmlLib.Core.Auth.Microsoft. https://github.com/CmlLib/CmlLib.Core.Auth.Microsoft")]
         public Task<MicrosoftAuthResponse> LoginWithXbox(string uhs, string xstsToken) =>
             client.SendActionAsync(new HttpAction<MicrosoftAuthResponse>
             {
@@ -327,6 +328,7 @@ namespace MojangAPI
                 }
             });
 
+        [Obsolete("Use CmlLib.Core.Auth.Microsoft. https://github.com/CmlLib/CmlLib.Core.Auth.Microsoft")]
         public async Task<MojangAuthResponse> RequestSessionWithXbox(string uhs, string xstsToken)
         {
             try

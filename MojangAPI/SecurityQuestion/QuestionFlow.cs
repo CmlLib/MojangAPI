@@ -13,7 +13,7 @@ namespace MojangAPI.SecurityQuestion
 {
     public class QuestionFlow
     {
-        private-readonly HttpClient client;
+        private readonly HttpClient client;
 
         public QuestionFlow()
         {
@@ -24,7 +24,7 @@ namespace MojangAPI.SecurityQuestion
         {
             this.client = client;
         }
-
+        
         public Task CheckTrusted(string accessToken) =>
             client.SendActionAsync(new HttpAction<bool>
             {

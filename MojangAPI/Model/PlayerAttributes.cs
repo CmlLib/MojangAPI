@@ -11,6 +11,9 @@ namespace MojangAPI.Model
         public PlayerPrivileges? Privileges { get; set; }
 
         [JsonPropertyName("profanityFilterPreferences")]
-        public PlayerProfanityFilterPreferences? ProfanityFilterPreferences { get;set;}
+        public PlayerProfanityFilterPreferences? ProfanityFilterPreferences { get; set; }
+
+        [JsonPropertyName("banStatus")]
+        public PlayerBanStatus? BanStatus { get; set; }
     }
 }

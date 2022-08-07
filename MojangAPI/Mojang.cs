@@ -84,11 +84,11 @@ namespace MojangAPI
                 Method = HttpMethod.Get,
                 Host = "https://sessionserver.mojang.com",
                 Path = $"session/minecraft/profile/{uuid ?? throw new ArgumentNullException()}",
-                ResponseHandler = uuidProfileResponseHandler,
+                ResponseHandler = profileResponseHandlerFromUUID,
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
-        private async Task<PlayerProfile> uuidProfileResponseHandler(HttpResponseMessage response)
+        private async Task<PlayerProfile> profileResponseHandlerFromUUID(HttpResponseMessage response)
         {
             var responseContent = await response.Content.ReadAsStringAsync();
             using var document = JsonDocument.Parse(responseContent);
@@ -138,11 +138,11 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken ?? throw new ArgumentNullException() },
                 },
 
-                ResponseHandler = atProfileResponseHandler,
+                ResponseHandler = profileResponseHandlerFromAccessToken,
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
-        private async Task<PlayerProfile> atProfileResponseHandler(HttpResponseMessage response)
+        private async Task<PlayerProfile> profileResponseHandlerFromAccessToken(HttpResponseMessage response)
         {
             string responseContent = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(responseContent);
@@ -174,7 +174,7 @@ namespace MojangAPI
             {
                 Method = HttpMethod.Get,
                 Host = "https://api.minecraftservices.com",
-                Path = "players/attributes",
+                Path = "player/attributes",
 
                 RequestHeaders = new HttpHeaderCollection
                 {
@@ -259,7 +259,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                ResponseHandler = atProfileResponseHandler,
+                ResponseHandler = profileResponseHandlerFromAccessToken,
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>(),
 
                 CheckValidation = (h) =>
@@ -296,7 +296,7 @@ namespace MojangAPI
                     else return null;
                 },
 
-                ResponseHandler = atProfileResponseHandler,
+                ResponseHandler = profileResponseHandlerFromAccessToken,
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 

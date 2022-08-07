@@ -5,18 +5,24 @@ using System.Text.Json.Serialization;
 
 namespace MojangAPI.Model
 {
+    public class PlayerPrivilegeItem
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+    }
+
     public class PlayerPrivileges
     {
         [JsonPropertyName("onlineChat")]
-        public bool OnlineChat { get; set; }
+        public PlayerPrivilegeItem? OnlineChat { get; set; }
 
         [JsonPropertyName("multiplayerServer")]
-        public bool MultiplayerServer { get; set; }
+        public PlayerPrivilegeItem? MultiplayerServer { get; set; }
 
         [JsonPropertyName("multiplayerRealms")]
-        public bool MultiplayerRealms { get; set; }
+        public PlayerPrivilegeItem? MultiplayerRealms { get; set; }
 
         [JsonPropertyName("telemtry")]
-        public bool Telemtry { get; set; }
+        public PlayerPrivilegeItem? Telemtry { get; set; }
     }
 }

@@ -8,7 +8,7 @@
     <Description>.NET Library for Mojang API, Mojang Authentication and Microsoft Xbox Authentication</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/AlphaBs/MojangAPI</RepositoryUrl>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <PackageTags>mojang minecraft api</PackageTags>
   </PropertyGroup>
 

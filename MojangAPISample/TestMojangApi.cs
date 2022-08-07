@@ -57,11 +57,32 @@ namespace MojangAPISample
         {
             note("This api only works on xbox account");
             PlayerAttributes attributes = await mojang.GetPlayerAttributes(session.AccessToken);
-            Console.WriteLine("Privileges.Telemtry: " + attributes.Privileges.Telemtry);
-            Console.WriteLine("Privileges.MultiplayerServer: " + attributes.Privileges.MultiplayerServer);
-            Console.WriteLine("Privileges.MultiplayerRealms: " + attributes.Privileges.MultiplayerRealms);
-            Console.WriteLine("Privileges.OnlineChat: " + attributes.Privileges.OnlineChat);
-            Console.WriteLine("ProfanityFilterPreferences.ProfanityFilterOn: " + attributes.ProfanityFilterPreferences.ProfanityFilterOn);
+            Console.WriteLine("Privileges.Telemtry: " + attributes.Privileges?.Telemtry?.Enabled);
+            Console.WriteLine("Privileges.MultiplayerServer: " + attributes?.Privileges?.MultiplayerServer?.Enabled);
+            Console.WriteLine("Privileges.MultiplayerRealms: " + attributes?.Privileges?.MultiplayerRealms?.Enabled);
+            Console.WriteLine("Privileges.OnlineChat: " + attributes?.Privileges?.OnlineChat?.Enabled);
+            Console.WriteLine("ProfanityFilterPreferences.ProfanityFilterOn: " + attributes?.ProfanityFilterPreferences?.ProfanityFilterOn);
+
+            Console.Write("BanStatus.BannedScopes: ");
+
+            var bannedScopes = attributes?.BanStatus?.BannedScopes;
+            if (bannedScopes == null)
+                Console.WriteLine("null");
+            else
+            {
+                Console.WriteLine();
+                foreach (var item in bannedScopes)
+                {
+                    Console.WriteLine(item.Key + ": ");
+                    if (item.Value == null)
+                        continue;
+                    Console.WriteLine("BanId: " + item.Value.BanId);
+                    Console.WriteLine("Expires: " + item.Value.Expires ?? "permanent");
+                    Console.WriteLine("Reason: " + item.Value.Reason);
+                    Console.WriteLine("ReasonMessage: " + item.Value.ReasonMessage);
+                }
+            }
+
             return true;
         }
 
@@ -81,8 +102,8 @@ namespace MojangAPISample
         {
             note("This api only works on xbox account");
             PlayerCertificates certificates = await mojang.GetPlayerCertificates(session.AccessToken);
-            Console.WriteLine("KeyPair.PrivateKey: " + certificates.KeyPair.PrivateKey);
-            Console.WriteLine("KeyPair.PublicKey: " + certificates.KeyPair.PublicKey);
+            Console.WriteLine("KeyPair.PrivateKey: " + certificates.KeyPair?.PrivateKey);
+            Console.WriteLine("KeyPair.PublicKey: " + certificates.KeyPair?.PublicKey);
             Console.WriteLine("PublicKeySignature: " + certificates.PublicKeySignature);
             Console.WriteLine("ExpiresAt: " + certificates.ExpiresAt);
             Console.WriteLine("RefreshedAfter: " + certificates.RefreshedAfter);
@@ -151,7 +172,7 @@ namespace MojangAPISample
         public async Task<bool> TestCheckNameAvailability()
         {
             string newName = "NEWNAME123";
-            string result = await mojang.CheckNameAvailability(session.AccessToken, newName);
+            string? result = await mojang.CheckNameAvailability(session.AccessToken, newName);
             Console.WriteLine($"{newName}: {result}");
             return true;
         }
@@ -159,7 +180,7 @@ namespace MojangAPISample
         private void printProfile(PlayerProfile profile)
         {
             Console.WriteLine($"{profile.UUID}: {profile.Name}, IsLegacy: {profile.IsLegacy}");
-            Console.WriteLine($"SKIN: {profile.Skin.Url}, {profile.Skin.Model}");
+            Console.WriteLine($"SKIN: {profile.Skin?.Url}, {profile.Skin?.Model}");
         }
 
         private void note(string msg)

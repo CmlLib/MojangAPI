@@ -2,12 +2,10 @@
 using System.Threading.Tasks;
 using System.Net.Http;
 using MojangAPI;
-using MojangAPI.Model;
 using MojangAPI.SecurityQuestion;
-using System.Net;
-using CmlLib.Core.Auth.Microsoft.MsalClient;
-using Microsoft.Identity.Client;
 using CmlLib.Core.Auth;
+using XboxAuthNet.Game.Msal;
+using CmlLib.Core.Auth.Microsoft;
 
 namespace MojangAPISample
 {
@@ -84,19 +82,15 @@ namespace MojangAPISample
 
         static async Task<MSession> loginXbox()
         {
-            MSession session;
+            var app = MsalClientHelper.CreateDefaultApplicationBuilder("499c8d36-be2a-4231-9ebd-ef291b7bb64c").Build();
+            var handler = JELoginHandlerBuilder.BuildDefault();
 
-            var app = MsalMinecraftLoginHelper.CreateDefaultApplicationBuilder("499c8d36-be2a-4231-9ebd-ef291b7bb64c").Build();
-            var handler = new MsalMinecraftLoginHandler(app);
-            try
-            {
-                session = await handler.LoginSilent();
-            }
-            catch (MsalUiRequiredException)
-            {
-                session = await handler.LoginInteractive();
-            }
+            var authenticator = handler.CreateAuthenticatorWithDefaultAccount();
+            authenticator.AddMsalOAuth(app, msal => msal.InteractiveWithSingleAccount());
+            authenticator.AddXboxAuthForJE(xbox => xbox.Basic());
+            authenticator.AddJEAuthenticator();
 
+            var session = await authenticator.ExecuteForLauncherAsync();
             return session;
         }
 

@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CmlLib.Core.Auth.Microsoft.MsalClient" Version="1.1.1" />
+    <PackageReference Include="CmlLib.Core.Auth.Microsoft" Version="3.0.2" />
+    <PackageReference Include="XboxAuthNet.Game.Msal" Version="0.0.6" />
   </ItemGroup>
 
   <ItemGroup>

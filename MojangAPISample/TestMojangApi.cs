@@ -29,6 +29,7 @@ namespace MojangAPISample
 
         public async Task<bool> TestGetNameHistories()
         {
+            note("This service was closed down by Mojang. It may not work.");
             NameHistory[] histories = await mojang.GetNameHistories(session.UUID);
             Console.WriteLine("Count: " + histories);
             foreach (var item in histories)

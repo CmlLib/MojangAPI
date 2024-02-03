@@ -7,10 +7,7 @@
 -   Asynchronous API
 -   Getting Player Data
 -   Changing Player Name or Skin
--   Mojang Authentication
--   Microsoft Authentication
 -   Security Question-Answer
--   Statistics
 
 Support:
 
@@ -18,31 +15,10 @@ Support:
 
 ## Install
 
-Use Nuget package [MojangAPI](https://www.nuget.org/packages/MojangAPI) or download dll from [release](https://github.com/CmlLib/MojangAPI/releases).
+Install Nuget package [MojangAPI](https://www.nuget.org/packages/MojangAPI)
 
-## Usage
+## Documentation
 
-Include these namespaces : 
+[Documentation](https://alphabs.gitbook.io/cmllib/mojangapi/home)
 
-```csharp
-using MojangAPI;
-using MojangAPI.Model;
-```
-
-Sample program: [MojangAPISample](./MojangAPISample)  
-
-### [MojangAPI](./docs/MojangAPI.md)
-
-Getting player profile, Changing name or skin, Statistics, Blocked Server, Checking Game Ownership
-
-### [Authentication](./docs/MojangAuth.md)
-
-Mojang Yggdrasil authentication. 
-
-### [XboxAuthentication](./docs/XboxAuthentication.md)
-
-Microsoft Xbox Authentication
-
-### [SecurityQuestion](./docs/SecurityQuestion.md)
-
-Security question-answer flow
+[한국어](https://alphabs.gitbook.io/cmllib/v/ko/mojangapi/home)

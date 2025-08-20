@@ -19,6 +19,6 @@ Install Nuget package [MojangAPI](https://www.nuget.org/packages/MojangAPI)
 
 ## Documentation
 
-[Documentation](https://alphabs.gitbook.io/cmllib/mojangapi/home)
+[Documentation](https://cmllib.github.io/CmlLib.Core-wiki/en/mojangapi/)
 
-[한국어](https://alphabs.gitbook.io/cmllib/v/ko/mojangapi/home)
+[한국어](https://cmllib.github.io/CmlLib.Core-wiki/ko/mojangapi/)

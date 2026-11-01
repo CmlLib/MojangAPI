@@ -37,14 +37,3 @@ var cache = new JsonFileCacheManager<MyPayload>("cache.json", AppJsonContext.Def
 ```
 
 오류 응답과 배열 응답에도 각각 `GetJsonErrorHandler(defaultValue, typeInfo)`, `GetJsonArrayHandler(typeInfo)`를 사용할 수 있습니다. 기존 `JsonHttpContent(object)` 생성자와 `serialize(object)`는 일반 JIT 앱과의 호환성을 위해 유지하며, .NET 10에서는 트리밍 및 동적 코드 경고를 표시합니다. NativeAOT에서는 `Create(value, typeInfo)`를 사용하세요.
-
-오프라인 검증은 실제 계정이나 네트워크 요청 없이 실행됩니다. JSON 리플렉션을 끄고 라이브러리 전체를 트리밍 분석 대상으로 지정하며, AOT 및 트리밍 경고는 오류로 처리합니다.
-
-```sh
-dotnet build MojangAPI/MojangAPI.csproj -c Release
-dotnet run --project tests/MojangAPI.LegacySmoke -c Release
-dotnet publish tests/MojangAPI.AotSmoke -c Release -r win-x64 -o artifacts/aot
-./artifacts/aot/MojangAPI.AotSmoke.exe
-```
-
-Linux에서는 RID를 `linux-x64`로 바꾸고 확장자 없는 실행 파일을 실행하세요. 네이티브 빌드 도구가 필요하며, CI에서 Linux의 게시 및 실행을 검증합니다.

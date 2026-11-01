@@ -13,15 +13,17 @@ namespace HttpAction
     {
         public static Func<HttpResponseMessage, Task<T>> GetDefaultResponseHandler<T>()
         {
-            // Each type check guarantees that the delegate result type matches T.
-            if (typeof(T) == typeof(bool))
-                return (Func<HttpResponseMessage, Task<T>>)(object)GetSuccessCodeResponseHandler();
-            if (typeof(T) == typeof(int))
-                return (Func<HttpResponseMessage, Task<T>>)(object)GetStatusCodeResponseHandler();
-            if (typeof(T) == typeof(string))
-                return (Func<HttpResponseMessage, Task<T>>)(object)GetStringResponseHandler();
-            if (typeof(T) == typeof(Stream))
-                return (Func<HttpResponseMessage, Task<T>>)(object)GetStreamResponseHandler();
+            if (GetSuccessCodeResponseHandler() is Func<HttpResponseMessage, Task<T>> successHandler)
+                return successHandler;
+
+            if (GetStatusCodeResponseHandler() is Func<HttpResponseMessage, Task<T>> statusCodeHandler)
+                return statusCodeHandler;
+
+            if (GetStringResponseHandler() is Func<HttpResponseMessage, Task<T>> stringHandler)
+                return stringHandler;
+
+            if (GetStreamResponseHandler() is Func<HttpResponseMessage, Task<T>> streamHandler)
+                return streamHandler;
 
             return response => GetJsonHandler(MojangJson.GetTypeInfo<T>())(response);
         }

@@ -63,8 +63,7 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
-                    return await handler.Invoke(response)
-                        .ConfigureAwait(false);
+                    return await handler.Invoke(response);
                 },
                 ErrorHandler = MojangException.GetMojangErrorHandler<NameHistory[]>()
             });
@@ -92,8 +91,7 @@ namespace MojangAPI
 
         private async Task<PlayerProfile> profileResponseHandlerFromUUID(HttpResponseMessage response)
         {
-            var responseContent = await response.Content.ReadAsStringAsync()
-                .ConfigureAwait(false);
+            var responseContent = await response.Content.ReadAsStringAsync();
             using var document = JsonDocument.Parse(responseContent);
             var root = document.RootElement;
 
@@ -147,8 +145,7 @@ namespace MojangAPI
 
         private async Task<PlayerProfile> profileResponseHandlerFromAccessToken(HttpResponseMessage response)
         {
-            string responseContent = await response.Content.ReadAsStringAsync()
-                .ConfigureAwait(false);
+            string responseContent = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(responseContent);
             var root = doc.RootElement;
 
@@ -203,8 +200,7 @@ namespace MojangAPI
 
                 ResponseHandler = async (res) =>
                 {
-                    var resbody = await res.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false);
+                    var resbody = await res.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(resbody);
                     return doc.RootElement.GetProperty("blockedProfiles")
                                           .EnumerateArray()
@@ -245,8 +241,7 @@ namespace MojangAPI
 
                 ResponseHandler = async (res) =>
                 {
-                    var resbody = await res.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false);
+                    var resbody = await res.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(resbody);
                     return doc.RootElement.GetProperty("status").GetString();
                 },
@@ -389,8 +384,7 @@ namespace MojangAPI
 
                 ResponseHandler = async (response) =>
                 {
-                    string content = await response.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false);
+                    string content = await response.Content.ReadAsStringAsync();
                     return content.Split('\n').Select(x => x.Trim()).ToArray();
                 },
                 ErrorHandler = MojangException.GetMojangErrorHandler<string[]>()
@@ -429,8 +423,7 @@ namespace MojangAPI
 
                 ResponseHandler = async (response) =>
                 {
-                    string responseContent = await response.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false);
+                    string responseContent = await response.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(responseContent);
                     return doc.RootElement.GetProperty("items").EnumerateArray().Any();
                 },

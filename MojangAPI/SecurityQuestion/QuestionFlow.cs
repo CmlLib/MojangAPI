@@ -55,8 +55,7 @@ namespace MojangAPI.SecurityQuestion
 
                 ResponseHandler = async (response) =>
                 {
-                    string content = await response.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false);
+                    string content = await response.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(content);
 
                     List<Question> questions = new List<Question>(3);

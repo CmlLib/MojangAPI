@@ -34,8 +34,7 @@ namespace MojangAPI
 
         private async Task<MojangAuthResponse> authResponseHandler(HttpResponseMessage response)
         {
-            string content = await response.Content.ReadAsStringAsync()
-                .ConfigureAwait(false);
+            string content = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(content);
             var root = doc.RootElement;
 
@@ -65,8 +64,7 @@ namespace MojangAPI
 
             try
             {
-                string content = await response.Content.ReadAsStringAsync()
-                    .ConfigureAwait(false);
+                string content = await response.Content.ReadAsStringAsync();
                 MojangAuthResponse authResponse = JsonSerializer.Deserialize(content, MojangJson.GetTypeInfo<MojangAuthResponse>())
                     ?? new MojangAuthResponse(MojangAuthResult.UnknownError);
 
@@ -126,11 +124,9 @@ namespace MojangAPI
             if (session.IsEmpty)
                 return new MojangAuthResponse(MojangAuthResult.InvalidSession);
 
-            MojangAuthResponse res = await Validate(session)
-                .ConfigureAwait(false);
+            MojangAuthResponse res = await Validate(session);
             if (!res.IsSuccess)
-                res = await Refresh(session)
-                    .ConfigureAwait(false);
+                res = await Refresh(session);
 
             return res;
         }
@@ -168,8 +164,7 @@ namespace MojangAPI
             if (session.AccessToken == null)
                 throw new ArgumentException("session.AccessToken");
 
-            MojangAuthResponse res = await Validate(session.AccessToken, session.ClientToken)
-                .ConfigureAwait(false);
+            MojangAuthResponse res = await Validate(session.AccessToken, session.ClientToken);
             if (res.IsSuccess)
                 res.Session = session;
             return res;
@@ -254,8 +249,7 @@ namespace MojangAPI
 
                 ResponseHandler = async (response) =>
                 {
-                    string content = await response.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false);
+                    string content = await response.Content.ReadAsStringAsync();
                     MicrosoftAuthResponse authResponse = JsonSerializer.Deserialize(content, MojangJson.GetTypeInfo<MicrosoftAuthResponse>())
                         ?? new MicrosoftAuthResponse();
                     authResponse.ExpiresOn = DateTime.Now.AddSeconds(authResponse.ExpiresIn);
@@ -275,19 +269,17 @@ namespace MojangAPI
         {
             try
             {
-                MicrosoftAuthResponse authResponse = await LoginWithXbox(uhs, xstsToken)
-                    .ConfigureAwait(false);
+                MicrosoftAuthResponse authResponse = await LoginWithXbox(uhs, xstsToken);
 
                 if (!authResponse.IsSuccess)
                     return new MojangAuthResponse(MojangAuthResult.InvalidCredentials);
 
                 Mojang mojang = new Mojang(this.client);
 
-                if (!await mojang.CheckGameOwnership(authResponse.AccessToken!).ConfigureAwait(false))
+                if (!await mojang.CheckGameOwnership(authResponse.AccessToken!))
                     return new MojangAuthResponse(MojangAuthResult.NoProfile);
 
-                PlayerProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!)
-                    .ConfigureAwait(false);
+                PlayerProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!);
                 Session session = new Session
                 {
                     Username = profile.Name,

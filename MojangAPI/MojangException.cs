@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -69,8 +69,7 @@ namespace MojangAPI
                 {
                     try
                     {
-                        var resBody = await response.Content.ReadAsStringAsync()
-                            .ConfigureAwait(false);
+                        var resBody = await response.Content.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(resBody))
                             ex = ParseFromResponse(resBody, (int)response.StatusCode);
                     }
@@ -89,8 +88,7 @@ namespace MojangAPI
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetMojangErrorHandler<T>() =>
             async (response, ex) =>
             {
-                await GetMojangErrorHandler().Invoke(response, ex)
-                    .ConfigureAwait(false);
+                await GetMojangErrorHandler().Invoke(response, ex);
                 return default(T);
             };
     }

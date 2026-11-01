@@ -78,8 +78,7 @@ namespace HttpAction
                 {
                     try
                     {
-                        var resBody = await response.Content.ReadAsStringAsync()
-                            .ConfigureAwait(false);
+                        var resBody = await response.Content.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(resBody))
                         {
                             var obj = MojangJson.Deserialize<T>(resBody, typeInfo);
@@ -104,8 +103,7 @@ namespace HttpAction
         public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>(JsonTypeInfo<T>? typeInfo) =>
             async (response) =>
             {
-                string res = await response.Content.ReadAsStringAsync()
-                    .ConfigureAwait(false);
+                string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
                     res = "{}";
                 return MojangJson.Deserialize<T>(res, typeInfo);
@@ -126,8 +124,7 @@ namespace HttpAction
         public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>(JsonTypeInfo<T>? typeInfo) =>
             async (response) =>
             {
-                string res = await response.Content.ReadAsStringAsync()
-                    .ConfigureAwait(false);
+                string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
                     res = "[]";
 

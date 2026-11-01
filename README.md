@@ -47,4 +47,4 @@ dotnet publish tests/MojangAPI.AotSmoke -c Release -r win-x64 -o artifacts/aot
 ./artifacts/aot/MojangAPI.AotSmoke.exe
 ```
 
-Linux에서는 RID를 `linux-x64`로 바꾸고 확장자 없는 실행 파일을 실행하세요. 네이티브 빌드 도구가 필요하며, CI에서 Windows와 Linux의 게시 및 실행을 검증합니다.
+Linux에서는 RID를 `linux-x64`로 바꾸고 확장자 없는 실행 파일을 실행하세요. 네이티브 빌드 도구가 필요하며, CI에서 Linux의 게시 및 실행을 검증합니다.

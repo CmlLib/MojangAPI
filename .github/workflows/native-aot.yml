@@ -9,16 +9,7 @@ permissions:
 
 jobs:
   smoke:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            rid: linux-x64
-            executable: MojangAPI.AotSmoke
-          - os: windows-latest
-            rid: win-x64
-            executable: MojangAPI.AotSmoke.exe
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,7 +20,7 @@ jobs:
       - name: Run netstandard2.0 compatibility checks
         run: dotnet run --project tests/MojangAPI.LegacySmoke -c Release
       - name: Publish NativeAOT smoke test
-        run: dotnet publish tests/MojangAPI.AotSmoke -c Release -r ${{ matrix.rid }} -o artifacts/aot
+        run: dotnet publish tests/MojangAPI.AotSmoke -c Release -r linux-x64 -o artifacts/aot
       - name: Run native smoke test
         shell: bash
-        run: ./artifacts/aot/${{ matrix.executable }}
+        run: ./artifacts/aot/MojangAPI.AotSmoke

@@ -74,7 +74,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
-                Content = JsonHttpContent.Create(usernames ?? throw new ArgumentNullException(), MojangJson.GetTypeInfo<string[]>()),
+                Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException(), MojangJson.GetTypeInfo<string[]>()),
                 ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<PlayerUUID>(),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID[]>()
             });
@@ -283,7 +283,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = JsonHttpContent.Create(new SkinRequest
+                Content = new JsonHttpContent(new SkinRequest
                 {
                     Variant = skinType.GetModelType(),
                     Url = skinUrl
@@ -400,7 +400,7 @@ namespace MojangAPI
                 Host = "https://api.mojang.com",
                 Path = "orders/statistics",
 
-                Content = JsonHttpContent.Create(new StatisticsRequest
+                Content = new JsonHttpContent(new StatisticsRequest
                 {
                     MetricKeys = options
                 }, MojangJson.GetTypeInfo<StatisticsRequest>()),

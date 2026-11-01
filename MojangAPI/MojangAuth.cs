@@ -102,7 +102,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "authenticate",
 
-                Content = JsonHttpContent.Create(new AuthenticationRequest
+                Content = new JsonHttpContent(new AuthenticationRequest
                 {
                     Username = email,
                     Password = password,
@@ -137,7 +137,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "refresh",
 
-                Content = JsonHttpContent.Create(new TokenRequest
+                Content = new JsonHttpContent(new TokenRequest
                 {
                     AccessToken = session.AccessToken,
                     ClientToken = session.ClientToken,
@@ -176,7 +176,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "validate",
 
-                Content = JsonHttpContent.Create(new TokenRequest
+                Content = new JsonHttpContent(new TokenRequest
                 {
                     AccessToken = accessToken,
                     ClientToken = clientToken
@@ -198,7 +198,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "signout",
 
-                Content = JsonHttpContent.Create(new CredentialsRequest
+                Content = new JsonHttpContent(new CredentialsRequest
                 {
                     Username = email,
                     Password = password
@@ -221,7 +221,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "invalidate",
 
-                Content = JsonHttpContent.Create(new TokenRequest
+                Content = new JsonHttpContent(new TokenRequest
                 {
                     AccessToken = accessToken,
                     ClientToken = clientToken

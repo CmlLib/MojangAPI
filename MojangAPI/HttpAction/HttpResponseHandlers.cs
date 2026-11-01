@@ -89,7 +89,7 @@ namespace HttpAction
                     }
                     catch
                     {
-                        // 응답을 해석하지 못하면 HTTP 상태와 원래 예외로 실패를 전달한다.
+                        // If the response cannot be parsed, fall back to the HTTP status and original exception.
                     }
                 }
 

@@ -7,7 +7,7 @@ namespace MojangAPI.Serialization
     {
         internal static JsonTypeInfo<T> GetTypeInfo<T>()
         {
-            // 호출자가 정의한 형식은 생성된 메타데이터를 직접 전달해야 한다.
+            // Callers must supply source-generated metadata for custom types.
             var typeInfo = MojangJsonContext.Default.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>;
             if (typeInfo == null)
                 throw new NotSupportedException($"Supply a source-generated JsonTypeInfo<{typeof(T).Name}> for custom JSON types.");

@@ -15,7 +15,7 @@ You can check whether the request was successful or failed to check `IsSuccess` 
 `Session` property is the result of authenticate. It contains `Username`, `AccessToken`, and `UUID`  
 If `IsSuccess` is false, `Result`, `Error`, and `ErrorMessage` property tell you why the request failed.  
 
-`MojangAuth`는 세션을 저장하지 않습니다. 인증 결과의 `Session`은 호출자가 보관하고, 재인증 시 `TryAutoLogin(session)`, `Refresh(session)`, `Validate(session)`에 직접 전달해야 합니다.
+`MojangAuth` does not persist sessions. Callers must keep the returned `Session` and pass it explicitly to `TryAutoLogin(session)`, `Refresh(session)`, or `Validate(session)`.
 
 There are two ways to login. One is `Yggdrasil Mojang Authentication` which is described below, and the other is `Microsoft Xbox Authentication` which is new way to login.  
 [Microsoft Xbox Authentication](./XboxAuthentication.md)
@@ -40,17 +40,17 @@ Session session = res.Session;
 
 #### public MojangAuth(HttpClient client)
 
-지정한 `HttpClient`로 인증 요청을 전송합니다. `null`을 전달하면 기본 클라이언트를 사용합니다. 세션 파일은 생성하거나 읽지 않습니다.
+Sends authentication requests using the supplied `HttpClient`, or the default client if `null` is supplied. No session files are created or read.
 
 ### Methods
 
 #### Authenticate
 
 ```csharp
-// 호출마다 새로운 클라이언트 토큰을 생성한다.
+// Generate a new client token for each authentication request.
 MojangAuthResponse res = await auth.Authenticate("mojang email", "password");
 
-// 지정한 클라이언트 토큰을 사용한다.
+// Use the supplied client token.
 MojangAuthResponse res = await auth.Authenticate("mojang email", "password", "clientToken");
 
 if (res.IsSuccess)
@@ -68,21 +68,21 @@ else
 #### TryAutoLogin
 
 ```csharp
-// 전달한 세션을 검증하고, 검증에 실패하면 갱신한다.
+// Validate the supplied session and refresh it if validation fails.
 MojangAuthResponse res = await auth.TryAutoLogin(session);
 ```
 
 #### Refresh
 
 ```csharp
-// 호출자가 보관한 세션 또는 토큰을 전달한다.
+// Pass the session or tokens managed by the caller.
 MojangAuthResponse res = await auth.Refresh(session);
 ```
 
 #### Validate
 
 ```csharp
-// 호출자가 보관한 세션 또는 토큰을 전달한다.
+// Pass the session or tokens managed by the caller.
 MojangAuthResponse res = await auth.Validate(session);
 ```
 
@@ -95,7 +95,7 @@ MojangAuthResponse res = await auth.Signout("mojang email", "password");
 #### Invalidate
 
 ```csharp
-// 호출자가 보관한 세션 또는 토큰을 전달한다.
+// Pass the session or tokens managed by the caller.
 MojangAuthResponse res = await auth.Invalidate("accessToken", "clientToken");
 ```
 *note: 'clientToken' can be null*

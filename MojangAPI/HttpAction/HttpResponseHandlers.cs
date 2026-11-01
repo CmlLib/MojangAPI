@@ -13,14 +13,15 @@ namespace HttpAction
     {
         public static Func<HttpResponseMessage, Task<T>> GetDefaultResponseHandler<T>()
         {
+            // Each type check guarantees that the delegate result type matches T.
             if (typeof(T) == typeof(bool))
-                return GetSuccessCodeResponseHandler() as Func<HttpResponseMessage, Task<T>>;
+                return (Func<HttpResponseMessage, Task<T>>)(object)GetSuccessCodeResponseHandler();
             if (typeof(T) == typeof(int))
-                return GetStatusCodeResponseHandler()  as Func<HttpResponseMessage, Task<T>>;
+                return (Func<HttpResponseMessage, Task<T>>)(object)GetStatusCodeResponseHandler();
             if (typeof(T) == typeof(string))
-                return GetStringResponseHandler()      as Func<HttpResponseMessage, Task<T>>;
+                return (Func<HttpResponseMessage, Task<T>>)(object)GetStringResponseHandler();
             if (typeof(T) == typeof(Stream))
-                return GetStreamResponseHandler()      as Func<HttpResponseMessage, Task<T>>;
+                return (Func<HttpResponseMessage, Task<T>>)(object)GetStreamResponseHandler();
 
             return response => GetJsonHandler(MojangJson.GetTypeInfo<T>())(response);
         }
@@ -112,11 +113,12 @@ namespace HttpAction
                 if (string.IsNullOrEmpty(res))
                     res = "{}";
 
-                return JsonSerializer.Deserialize(res, typeInfo);
+                return JsonSerializer.Deserialize(res, typeInfo)
+                    ?? throw new JsonException("The response must contain a non-null JSON value.");
             };
         }
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetDefaultErrorHandler<T>() =>
+        public static Func<HttpResponseMessage, Exception?, Task<T?>> GetDefaultErrorHandler<T>() =>
             (response, ex) =>
             {
                 response.EnsureSuccessStatusCode();
@@ -141,7 +143,8 @@ namespace HttpAction
                 var root = doc.RootElement;
 
                 return root.EnumerateArray()
-                    .Select(elem => JsonSerializer.Deserialize(elem.GetRawText(), typeInfo))
+                    .Select(elem => JsonSerializer.Deserialize(elem.GetRawText(), typeInfo)
+                        ?? throw new JsonException("The response array must not contain null elements."))
                     .ToArray();
             };
         }

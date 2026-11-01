@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -62,7 +62,7 @@ namespace MojangAPI
             }
         }
 
-        public static Func<HttpResponseMessage, Exception?, Task> GetMojangErrorHandler() =>
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetMojangErrorHandler<T>() =>
             async (response, ex) =>
             {
                 if (ex == null)
@@ -85,11 +85,7 @@ namespace MojangAPI
                 throw new MojangException($"{(int)response.StatusCode}: {response.ReasonPhrase}", (int)response.StatusCode);
             };
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetMojangErrorHandler<T>() =>
-            async (response, ex) =>
-            {
-                await GetMojangErrorHandler().Invoke(response, ex);
-                return default(T);
-            };
+        public static Func<HttpResponseMessage, Exception?, Task> GetMojangErrorHandler() =>
+            (response, ex) => GetMojangErrorHandler<object>()(response, ex);
     }
 }

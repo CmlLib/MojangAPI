@@ -100,10 +100,11 @@ namespace MojangAPI
             try
             {
                 var innerValue = root.GetProperty("properties")
-                                     .EnumerateArray()
-                                     .First()
-                                     .GetProperty("value")
-                                     .GetString();
+                    .EnumerateArray()
+                    .First()
+                    .GetProperty("value")
+                    .GetString()
+                    ?? throw new JsonException("The profile texture value must be a non-null string.");
 
                 var decoded = Convert.FromBase64String(innerValue);
                 using var skinDocument = JsonDocument.Parse(decoded);
@@ -118,10 +119,10 @@ namespace MojangAPI
             catch
             {
                 SkinType? defaultSkinType = null;
-                if (string.IsNullOrEmpty(profile?.UUID))
-                    defaultSkinType = Skin.GetDefaultSkinType(profile!.UUID!);
+                if (profile.UUID is string profileUuid && profileUuid.Length == 32)
+                    defaultSkinType = Skin.GetDefaultSkinType(profileUuid);
 
-                profile!.Skin = new Skin(null, defaultSkinType);
+                profile.Skin = new Skin(null, defaultSkinType);
             }
 
             return profile;
@@ -161,10 +162,10 @@ namespace MojangAPI
             catch
             {
                 SkinType? defaultSkinType = null;
-                if (string.IsNullOrEmpty(profile?.UUID))
-                    defaultSkinType = Skin.GetDefaultSkinType(profile!.UUID!);
+                if (profile.UUID is string profileUuid && profileUuid.Length == 32)
+                    defaultSkinType = Skin.GetDefaultSkinType(profileUuid);
 
-                profile!.Skin = new Skin(null, defaultSkinType);
+                profile.Skin = new Skin(null, defaultSkinType);
             }
 
             return profile;

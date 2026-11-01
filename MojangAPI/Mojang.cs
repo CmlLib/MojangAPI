@@ -119,7 +119,7 @@ namespace MojangAPI
             catch
             {
                 SkinType? defaultSkinType = null;
-                if (profile.UUID is string profileUuid && profileUuid.Length == 32)
+                if (profile.UUID is string profileUuid && !string.IsNullOrEmpty(profileUuid))
                     defaultSkinType = Skin.GetDefaultSkinType(profileUuid);
 
                 profile.Skin = new Skin(null, defaultSkinType);
@@ -162,7 +162,7 @@ namespace MojangAPI
             catch
             {
                 SkinType? defaultSkinType = null;
-                if (profile.UUID is string profileUuid && profileUuid.Length == 32)
+                if (profile.UUID is string profileUuid && !string.IsNullOrEmpty(profileUuid))
                     defaultSkinType = Skin.GetDefaultSkinType(profileUuid);
 
                 profile.Skin = new Skin(null, defaultSkinType);

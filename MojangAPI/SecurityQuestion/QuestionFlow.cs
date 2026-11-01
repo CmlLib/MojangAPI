@@ -1,4 +1,4 @@
-﻿using MojangAPI.Model;
+using MojangAPI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,7 +55,8 @@ namespace MojangAPI.SecurityQuestion
 
                 ResponseHandler = async (response) =>
                 {
-                    string content = await response.Content.ReadAsStringAsync();
+                    string content = await response.Content.ReadAsStringAsync()
+                        .ConfigureAwait(false);
                     using var doc = JsonDocument.Parse(content);
 
                     List<Question> questions = new List<Question>(3);
@@ -86,7 +87,7 @@ namespace MojangAPI.SecurityQuestion
             var jarr = new JsonArray();
             foreach (var item in list)
             {
-                jarr.Add(new JsonObject
+                jarr.Add((JsonNode)new JsonObject
                 {
                     ["id"] = item.AnswerId,
                     ["answer"] = item.Answer

@@ -1,4 +1,5 @@
-﻿using HttpAction;
+using MojangAPI.Serialization;
+using HttpAction;
 using MojangAPI.Cache;
 using MojangAPI.Model;
 using System;
@@ -52,7 +53,8 @@ namespace MojangAPI
             if (string.IsNullOrEmpty(httpAction.Host))
                 httpAction.Host = "https://authserver.mojang.com";
 
-            T response = await client.SendActionAsync(httpAction);
+            T response = await client.SendActionAsync(httpAction)
+                .ConfigureAwait(false);
 
             if (response.IsSuccess && response.Session != null)
                 SaveSession(response.Session);
@@ -62,7 +64,8 @@ namespace MojangAPI
 
         private async Task<MojangAuthResponse> authResponseHandler(HttpResponseMessage response)
         {
-            string content = await response.Content.ReadAsStringAsync();
+            string content = await response.Content.ReadAsStringAsync()
+                .ConfigureAwait(false);
             using var doc = JsonDocument.Parse(content);
             var root = doc.RootElement;
 
@@ -87,8 +90,9 @@ namespace MojangAPI
 
             try
             {
-                string content = await response.Content.ReadAsStringAsync();
-                MojangAuthResponse authResponse = JsonSerializer.Deserialize<MojangAuthResponse>(content)
+                string content = await response.Content.ReadAsStringAsync()
+                    .ConfigureAwait(false);
+                MojangAuthResponse authResponse = JsonSerializer.Deserialize(content, MojangJson.GetTypeInfo<MojangAuthResponse>())
                     ?? new MojangAuthResponse(MojangAuthResult.UnknownError);
 
                 switch (authResponse.Error)
@@ -125,17 +129,12 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "authenticate",
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new AuthenticationRequest
                 {
-                    agent = new
-                    {
-                        name = "Minecraft",
-                        version = 1
-                    },
-                    username = email,
-                    password,
-                    clientToken
-                }),
+                    Username = email,
+                    Password = password,
+                    ClientToken = clientToken
+                }, MojangJson.GetTypeInfo<AuthenticationRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -153,7 +152,8 @@ namespace MojangAPI
             if (cachedSession == null || cachedSession.IsEmpty)
                 return new MojangAuthResponse(MojangAuthResult.InvalidSession);
             else
-                return await TryAutoLogin(cachedSession);
+                return await TryAutoLogin(cachedSession)
+                    .ConfigureAwait(false);
         }
 
         public async Task<MojangAuthResponse> TryAutoLogin(Session session)
@@ -161,9 +161,11 @@ namespace MojangAPI
             if (session.IsEmpty)
                 return new MojangAuthResponse(MojangAuthResult.InvalidSession);
 
-            MojangAuthResponse res = await Validate(session);
+            MojangAuthResponse res = await Validate(session)
+                .ConfigureAwait(false);
             if (!res.IsSuccess)
-                res = await Refresh(session);
+                res = await Refresh(session)
+                    .ConfigureAwait(false);
 
             return res;
         }
@@ -183,17 +185,17 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "refresh",
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new TokenRequest
                 {
-                    accessToken = session.AccessToken,
-                    clientToken = session.ClientToken,
+                    AccessToken = session.AccessToken,
+                    ClientToken = session.ClientToken,
 
-                    selectedProfile = new
+                    SelectedProfile = new SelectedProfile
                     {
-                        id = session.UUID,
-                        name = session.Username
+                        Id = session.UUID,
+                        Name = session.Username
                     }
-                }),
+                }, MojangJson.GetTypeInfo<TokenRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -219,7 +221,8 @@ namespace MojangAPI
             if (session.AccessToken == null)
                 throw new ArgumentException("session.AccessToken");
 
-            MojangAuthResponse res = await Validate(session.AccessToken, session.ClientToken);
+            MojangAuthResponse res = await Validate(session.AccessToken, session.ClientToken)
+                .ConfigureAwait(false);
             if (res.IsSuccess)
                 res.Session = session;
             return res;
@@ -231,11 +234,11 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "validate",
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new TokenRequest
                 {
-                    accessToken,
-                    clientToken
-                }),
+                    AccessToken = accessToken,
+                    ClientToken = clientToken
+                }, MojangJson.GetTypeInfo<TokenRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -253,11 +256,11 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "signout",
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new CredentialsRequest
                 {
-                    username = email,
-                    password = password
-                }),
+                    Username = email,
+                    Password = password
+                }, MojangJson.GetTypeInfo<CredentialsRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -285,11 +288,11 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "invalidate",
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new TokenRequest
                 {
-                    accessToken = accessToken,
-                    clientToken = clientToken
-                }),
+                    AccessToken = accessToken,
+                    ClientToken = clientToken
+                }, MojangJson.GetTypeInfo<TokenRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -313,8 +316,9 @@ namespace MojangAPI
 
                 ResponseHandler = async (response) =>
                 {
-                    string content = await response.Content.ReadAsStringAsync();
-                    MicrosoftAuthResponse authResponse = JsonSerializer.Deserialize<MicrosoftAuthResponse>(content)
+                    string content = await response.Content.ReadAsStringAsync()
+                        .ConfigureAwait(false);
+                    MicrosoftAuthResponse authResponse = JsonSerializer.Deserialize(content, MojangJson.GetTypeInfo<MicrosoftAuthResponse>())
                         ?? new MicrosoftAuthResponse();
                     authResponse.ExpiresOn = DateTime.Now.AddSeconds(authResponse.ExpiresIn);
                     return authResponse;
@@ -333,17 +337,19 @@ namespace MojangAPI
         {
             try
             {
-                MicrosoftAuthResponse authResponse = await LoginWithXbox(uhs, xstsToken);
+                MicrosoftAuthResponse authResponse = await LoginWithXbox(uhs, xstsToken)
+                    .ConfigureAwait(false);
 
                 if (!authResponse.IsSuccess)
                     return new MojangAuthResponse(MojangAuthResult.InvalidCredentials);
 
                 Mojang mojang = new Mojang(this.client);
 
-                if (!await mojang.CheckGameOwnership(authResponse.AccessToken!))
+                if (!await mojang.CheckGameOwnership(authResponse.AccessToken!).ConfigureAwait(false))
                     return new MojangAuthResponse(MojangAuthResult.NoProfile);
 
-                PlayerProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!);
+                PlayerProfile profile = await mojang.GetProfileUsingAccessToken(authResponse.AccessToken!)
+                    .ConfigureAwait(false);
                 Session session = new Session
                 {
                     Username = profile.Name,

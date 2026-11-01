@@ -1,4 +1,6 @@
-﻿using System;
+using MojangAPI.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -63,14 +65,12 @@ namespace HttpAction
                     throw new HttpRequestException();
             };
 
-        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        };
-
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>() where T : new() => GetJsonErrorHandler(new T());
 
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj) =>
+            GetJsonErrorHandler(defaultObj, null);
+
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj, JsonTypeInfo<T>? typeInfo) =>
             async (response, ex) =>
             {
                 // 
@@ -78,10 +78,11 @@ namespace HttpAction
                 {
                     try
                     {
-                        var resBody = await response.Content.ReadAsStringAsync();
+                        var resBody = await response.Content.ReadAsStringAsync()
+                            .ConfigureAwait(false);
                         if (!string.IsNullOrEmpty(resBody))
                         {
-                            var obj = JsonSerializer.Deserialize<T>(resBody, jsonSerializerOptions);
+                            var obj = MojangJson.Deserialize<T>(resBody, typeInfo);
                             if (obj != null)
                                 return obj;
                         }
@@ -98,13 +99,16 @@ namespace HttpAction
                 return defaultObj;
             };
 
-        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>() =>
+        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>() => GetJsonHandler<T>(null);
+
+        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>(JsonTypeInfo<T>? typeInfo) =>
             async (response) =>
             {
-                string res = await response.Content.ReadAsStringAsync();
+                string res = await response.Content.ReadAsStringAsync()
+                    .ConfigureAwait(false);
                 if (string.IsNullOrEmpty(res))
                     res = "{}";
-                return JsonSerializer.Deserialize<T>(res, jsonSerializerOptions);
+                return MojangJson.Deserialize<T>(res, typeInfo);
             };
 
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetDefaultErrorHandler<T>() =>
@@ -117,10 +121,13 @@ namespace HttpAction
                 return Task.FromResult(default(T));
             };
 
-        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>() =>
+        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>() => GetJsonArrayHandler<T>(null);
+
+        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>(JsonTypeInfo<T>? typeInfo) =>
             async (response) =>
             {
-                string res = await response.Content.ReadAsStringAsync();
+                string res = await response.Content.ReadAsStringAsync()
+                    .ConfigureAwait(false);
                 if (string.IsNullOrEmpty(res))
                     res = "[]";
 
@@ -128,7 +135,7 @@ namespace HttpAction
                 var root = doc.RootElement;
 
                 return root.EnumerateArray()
-                    .Select(elem => elem.Deserialize<T>(jsonSerializerOptions))
+                    .Select(elem => MojangJson.Deserialize<T>(elem.GetRawText(), typeInfo))
                     .ToArray();
             };
     }

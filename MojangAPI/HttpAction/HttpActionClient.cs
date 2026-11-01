@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,25 +35,29 @@ namespace HttpAction
                 httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
 
             HttpResponseMessage response
-                = await client.SendAsync(httpAction, httpCompletionOption, cancellationToken);
+                = await client.SendAsync(httpAction, httpCompletionOption, cancellationToken)
+                    .ConfigureAwait(false);
 
             T result;
             if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
             {
                 try
                 {
-                    result = await httpAction.ResponseHandler(response);
+                    result = await httpAction.ResponseHandler(response)
+                        .ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
                     if (httpAction.ErrorHandler != null)
-                        result = await httpAction.ErrorHandler(response, e);
+                        result = await httpAction.ErrorHandler(response, e)
+                            .ConfigureAwait(false);
                     else
                         throw;
                 }
             }
             else
-                result = await httpAction.ErrorHandler(response, null);
+                result = await httpAction.ErrorHandler(response, null)
+                    .ConfigureAwait(false);
 
             ActionResponse? actionResponse = result as ActionResponse;
             if (actionResponse != null)

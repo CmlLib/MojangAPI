@@ -1,14 +1,23 @@
-﻿using System.IO;
+using MojangAPI.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using System.IO;
 using System.Text.Json;
 
 namespace MojangAPI.Cache
 {
     public class JsonFileCacheManager<T> : ICacheManager<T> where T : new()
     {
+        private readonly JsonTypeInfo<T>? typeInfo;
+
         public string CacheFilePath { get; private set; }
 
-        public JsonFileCacheManager(string filepath)
+        public JsonFileCacheManager(string filepath) : this(filepath, null)
         {
+        }
+
+        public JsonFileCacheManager(string filepath, JsonTypeInfo<T>? typeInfo)
+        {
+            this.typeInfo = typeInfo;
             this.CacheFilePath = filepath;
         }
 
@@ -22,7 +31,7 @@ namespace MojangAPI.Cache
             try
             {
                 string filecontent = File.ReadAllText(CacheFilePath);
-                return JsonSerializer.Deserialize<T>(filecontent) ?? new T();
+                return MojangJson.Deserialize<T>(filecontent, typeInfo) ?? new T();
             }
             catch
             {
@@ -35,7 +44,7 @@ namespace MojangAPI.Cache
             var dirPath = Path.GetDirectoryName(CacheFilePath);
             if (!string.IsNullOrEmpty(dirPath))
                 Directory.CreateDirectory(dirPath);
-            File.WriteAllText(CacheFilePath, JsonSerializer.Serialize(obj));
+            File.WriteAllText(CacheFilePath, MojangJson.Serialize(obj, typeInfo));
         }
     }
 }

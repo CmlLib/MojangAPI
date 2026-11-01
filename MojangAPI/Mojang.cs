@@ -1,4 +1,5 @@
-﻿using HttpAction;
+using MojangAPI.Serialization;
+using HttpAction;
 using MojangAPI.Model;
 using System;
 using System.IO;
@@ -62,7 +63,8 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
-                    return await handler.Invoke(response);
+                    return await handler.Invoke(response)
+                        .ConfigureAwait(false);
                 },
                 ErrorHandler = MojangException.GetMojangErrorHandler<NameHistory[]>()
             });
@@ -73,7 +75,7 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
-                Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException()),
+                Content = JsonHttpContent.Create(usernames ?? throw new ArgumentNullException(), MojangJson.GetTypeInfo<string[]>()),
                 ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<PlayerUUID>(),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID[]>()
             });
@@ -90,11 +92,12 @@ namespace MojangAPI
 
         private async Task<PlayerProfile> profileResponseHandlerFromUUID(HttpResponseMessage response)
         {
-            var responseContent = await response.Content.ReadAsStringAsync();
+            var responseContent = await response.Content.ReadAsStringAsync()
+                .ConfigureAwait(false);
             using var document = JsonDocument.Parse(responseContent);
             var root = document.RootElement;
 
-            var profile = root.Deserialize<PlayerProfile>() ?? new PlayerProfile();
+            var profile = JsonSerializer.Deserialize(root.GetRawText(), MojangJson.GetTypeInfo<PlayerProfile>()) ?? new PlayerProfile();
             
             try
             {
@@ -144,11 +147,12 @@ namespace MojangAPI
 
         private async Task<PlayerProfile> profileResponseHandlerFromAccessToken(HttpResponseMessage response)
         {
-            string responseContent = await response.Content.ReadAsStringAsync();
+            string responseContent = await response.Content.ReadAsStringAsync()
+                .ConfigureAwait(false);
             using var doc = JsonDocument.Parse(responseContent);
             var root = doc.RootElement;
 
-            var profile = root.Deserialize<PlayerProfile>() ?? new PlayerProfile();
+            var profile = JsonSerializer.Deserialize(root.GetRawText(), MojangJson.GetTypeInfo<PlayerProfile>()) ?? new PlayerProfile();
 
             try
             {
@@ -199,7 +203,8 @@ namespace MojangAPI
 
                 ResponseHandler = async (res) =>
                 {
-                    var resbody = await res.Content.ReadAsStringAsync();
+                    var resbody = await res.Content.ReadAsStringAsync()
+                        .ConfigureAwait(false);
                     using var doc = JsonDocument.Parse(resbody);
                     return doc.RootElement.GetProperty("blockedProfiles")
                                           .EnumerateArray()
@@ -240,7 +245,8 @@ namespace MojangAPI
 
                 ResponseHandler = async (res) =>
                 {
-                    var resbody = await res.Content.ReadAsStringAsync();
+                    var resbody = await res.Content.ReadAsStringAsync()
+                        .ConfigureAwait(false);
                     using var doc = JsonDocument.Parse(resbody);
                     return doc.RootElement.GetProperty("status").GetString();
                 },
@@ -282,11 +288,11 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new SkinRequest
                 {
-                    variant = skinType.GetModelType(),
-                    url = skinUrl
-                }),
+                    Variant = skinType.GetModelType(),
+                    Url = skinUrl
+                }, MojangJson.GetTypeInfo<SkinRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -383,7 +389,8 @@ namespace MojangAPI
 
                 ResponseHandler = async (response) =>
                 {
-                    string content = await response.Content.ReadAsStringAsync();
+                    string content = await response.Content.ReadAsStringAsync()
+                        .ConfigureAwait(false);
                     return content.Split('\n').Select(x => x.Trim()).ToArray();
                 },
                 ErrorHandler = MojangException.GetMojangErrorHandler<string[]>()
@@ -399,10 +406,10 @@ namespace MojangAPI
                 Host = "https://api.mojang.com",
                 Path = "orders/statistics",
 
-                Content = new JsonHttpContent(new
+                Content = JsonHttpContent.Create(new StatisticsRequest
                 {
-                    metricKeys = options
-                }),
+                    MetricKeys = options
+                }, MojangJson.GetTypeInfo<StatisticsRequest>()),
 
                 ResponseHandler = HttpResponseHandlers.GetJsonHandler<Statistics>(),
                 ErrorHandler = MojangException.GetMojangErrorHandler<Statistics>()
@@ -422,7 +429,8 @@ namespace MojangAPI
 
                 ResponseHandler = async (response) =>
                 {
-                    string responseContent = await response.Content.ReadAsStringAsync();
+                    string responseContent = await response.Content.ReadAsStringAsync()
+                        .ConfigureAwait(false);
                     using var doc = JsonDocument.Parse(responseContent);
                     return doc.RootElement.GetProperty("items").EnumerateArray().Any();
                 },

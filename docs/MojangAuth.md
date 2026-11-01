@@ -15,7 +15,7 @@ You can check whether the request was successful or failed to check `IsSuccess` 
 `Session` property is the result of authenticate. It contains `Username`, `AccessToken`, and `UUID`  
 If `IsSuccess` is false, `Result`, `Error`, and `ErrorMessage` property tell you why the request failed.  
 
-`MojangAuth` has its own session caching manager. You don't have to type mojang email and password everytime when you login. Login once using your mojang email and password, and `MojangAuth` will save your session information into json file(not contain your raw password, it contains only tokens). Next time when you login just call `TryAutoLogin`. it authenticate you using cached session without typing mojang email and password.
+`MojangAuth`는 세션을 저장하지 않습니다. 인증 결과의 `Session`은 호출자가 보관하고, 재인증 시 `TryAutoLogin(session)`, `Refresh(session)`, `Validate(session)`에 직접 전달해야 합니다.
 
 There are two ways to login. One is `Yggdrasil Mojang Authentication` which is described below, and the other is `Microsoft Xbox Authentication` which is new way to login.  
 [Microsoft Xbox Authentication](./XboxAuthentication.md)
@@ -26,16 +26,7 @@ Example:
 HttpClient httpClient = new HttpClient();
 MojangAuth auth = new MojangAuth(httpClient);
 
-MojangAuthResponse res;
-
-res = await auth.TryAutoLogin(); // login using cached session
-if (!res.IsSuccess) // failed to login using cached session
-{
-    Console.WriteLine(res.Result.ToString());
-
-    // it will save your login information into json file
-    res = await auth.Authenticate("mojang email", "password");
-}
+MojangAuthResponse res = await auth.Authenticate("mojang email", "password");
 
 Console.WriteLine(res.ToString());
 
@@ -49,27 +40,17 @@ Session session = res.Session;
 
 #### public MojangAuth(HttpClient client)
 
-Same as `new MojangAuth(client, new SessionFileCacheManager("mojang_auth.json"))`
-
-#### public MojangAuth(HttpClient httpClient, ICacheManager\<Session\> _cacheManager)
-
-Initialize a new instance of the `MojangAuth` class with the specified cache manager.  
-If `_cacheManager` is null, `MojangAuth` does not cache session.  
-If you want to change cache file path, create a instance of `SessionFileCacheManager` with file path.  
-Example: 
-```csharp
-MojangAuth auth = new MojangAuth(client, new SessionFileCacheManager("session_file_path.json"));
-```
+지정한 `HttpClient`로 인증 요청을 전송합니다. `null`을 전달하면 기본 클라이언트를 사용합니다. 세션 파일은 생성하거나 읽지 않습니다.
 
 ### Methods
 
 #### Authenticate
 
 ```csharp
-// using cached client token or create new client token if it was null.
+// 호출마다 새로운 클라이언트 토큰을 생성한다.
 MojangAuthResponse res = await auth.Authenticate("mojang email", "password");
 
-// using the specified client token
+// 지정한 클라이언트 토큰을 사용한다.
 MojangAuthResponse res = await auth.Authenticate("mojang email", "password", "clientToken");
 
 if (res.IsSuccess)
@@ -87,29 +68,21 @@ else
 #### TryAutoLogin
 
 ```csharp
-// call Validate() and Refersh() using cached session.
-MojangAuthResponse res = await auth.TryAutoLogin();
+// 전달한 세션을 검증하고, 검증에 실패하면 갱신한다.
+MojangAuthResponse res = await auth.TryAutoLogin(session);
 ```
 
 #### Refresh
 
 ```csharp
-// using cached session
-MojangAuthResponse res = await auth.Refresh();
-```
-```csharp
-// using the specified session
+// 호출자가 보관한 세션 또는 토큰을 전달한다.
 MojangAuthResponse res = await auth.Refresh(session);
 ```
 
 #### Validate
 
 ```csharp
-// using cached session
-MojangAuthResponse res = await auth.Validate();
-```
-```csharp
-// using the specified session
+// 호출자가 보관한 세션 또는 토큰을 전달한다.
 MojangAuthResponse res = await auth.Validate(session);
 ```
 
@@ -122,11 +95,7 @@ MojangAuthResponse res = await auth.Signout("mojang email", "password");
 #### Invalidate
 
 ```csharp
-// using cached session
-MojangAuthResponse res = await auth.Invalidate();
-```
-```csharp
-// using the specified session
+// 호출자가 보관한 세션 또는 토큰을 전달한다.
 MojangAuthResponse res = await auth.Invalidate("accessToken", "clientToken");
 ```
 *note: 'clientToken' can be null*

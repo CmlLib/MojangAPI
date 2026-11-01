@@ -12,7 +12,6 @@ namespace MojangAPI.Serialization
     [JsonSerializable(typeof(PlayerAttributes))]
     [JsonSerializable(typeof(PlayerCertificates))]
     [JsonSerializable(typeof(Statistics))]
-    [JsonSerializable(typeof(Session))]
     [JsonSerializable(typeof(MojangAuthResponse))]
     [JsonSerializable(typeof(MicrosoftAuthResponse))]
     [JsonSerializable(typeof(SkinRequest))]

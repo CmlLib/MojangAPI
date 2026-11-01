@@ -24,18 +24,6 @@ namespace MojangAPI.Serialization
 #endif
         }
 
-        internal static string Serialize<T>(T value, JsonTypeInfo<T>? typeInfo = null)
-        {
-#if NET10_0_OR_GREATER
-            return JsonSerializer.Serialize(value, typeInfo ?? GetTypeInfo<T>());
-#else
-            if (typeInfo != null)
-                return JsonSerializer.Serialize(value, typeInfo);
-
-            return JsonSerializer.Serialize(value);
-#endif
-        }
-
         internal static JsonTypeInfo<T> GetTypeInfo<T>()
         {
             // 호출자가 정의한 형식은 생성된 메타데이터를 직접 전달해야 한다.

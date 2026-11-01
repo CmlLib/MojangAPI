@@ -62,7 +62,7 @@ namespace MojangAPI
                 Path = $"user/profiles/{uuid?.Replace("-", "") ?? throw new ArgumentNullException(nameof(uuid))}/names",
                 ResponseHandler = async (response) =>
                 {
-                    var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
+                    var handler = HttpResponseHandlers.GetJsonArrayHandler(MojangJson.GetTypeInfo<NameHistory>());
                     return await handler.Invoke(response);
                 },
                 ErrorHandler = MojangException.GetMojangErrorHandler<NameHistory[]>()
@@ -75,7 +75,7 @@ namespace MojangAPI
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
                 Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException(), MojangJson.GetTypeInfo<string[]>()),
-                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<PlayerUUID>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler(MojangJson.GetTypeInfo<PlayerUUID>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID[]>()
             });
 
@@ -182,7 +182,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerAttributes>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler(MojangJson.GetTypeInfo<PlayerAttributes>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerAttributes>()
             });
 
@@ -223,7 +223,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerCertificates>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler(MojangJson.GetTypeInfo<PlayerCertificates>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerCertificates>()
             });
 
@@ -405,7 +405,7 @@ namespace MojangAPI
                     MetricKeys = options
                 }, MojangJson.GetTypeInfo<StatisticsRequest>()),
 
-                ResponseHandler = HttpResponseHandlers.GetJsonHandler<Statistics>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler(MojangJson.GetTypeInfo<Statistics>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<Statistics>()
             });
 

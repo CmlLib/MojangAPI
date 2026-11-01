@@ -22,7 +22,7 @@ namespace HttpAction
             if (typeof(T) == typeof(Stream))
                 return GetStreamResponseHandler()      as Func<HttpResponseMessage, Task<T>>;
 
-            return GetJsonHandler<T>();
+            return response => GetJsonHandler(MojangJson.GetTypeInfo<T>())(response);
         }
 
         public static Func<HttpResponseMessage, Task<bool>> GetSuccessCodeResponseHandler() =>
@@ -65,15 +65,16 @@ namespace HttpAction
                     throw new HttpRequestException();
             };
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>() where T : new() => GetJsonErrorHandler(new T());
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(JsonTypeInfo<T> typeInfo) where T : new() =>
+            GetJsonErrorHandler(new T(), typeInfo);
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj) =>
-            GetJsonErrorHandler(defaultObj, null);
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj, JsonTypeInfo<T> typeInfo)
+        {
+            if (typeInfo == null)
+                throw new ArgumentNullException(nameof(typeInfo));
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj, JsonTypeInfo<T>? typeInfo) =>
-            async (response, ex) =>
+            return async (response, ex) =>
             {
-                // 
                 if (ex == null)
                 {
                     try
@@ -81,33 +82,39 @@ namespace HttpAction
                         var resBody = await response.Content.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(resBody))
                         {
-                            var obj = MojangJson.Deserialize<T>(resBody, typeInfo);
+                            var obj = JsonSerializer.Deserialize(resBody, typeInfo);
                             if (obj != null)
                                 return obj;
                         }
                     }
                     catch
                     {
-                        // ignore exception to execute next error handler
+                        // 응답을 해석하지 못하면 HTTP 상태와 원래 예외로 실패를 전달한다.
                     }
                 }
 
                 response.EnsureSuccessStatusCode();
                 if (ex != null)
                     throw ex;
+
                 return defaultObj;
             };
+        }
 
-        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>() => GetJsonHandler<T>(null);
+        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>(JsonTypeInfo<T> typeInfo)
+        {
+            if (typeInfo == null)
+                throw new ArgumentNullException(nameof(typeInfo));
 
-        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>(JsonTypeInfo<T>? typeInfo) =>
-            async (response) =>
+            return async response =>
             {
                 string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
                     res = "{}";
-                return MojangJson.Deserialize<T>(res, typeInfo);
+
+                return JsonSerializer.Deserialize(res, typeInfo);
             };
+        }
 
         public static Func<HttpResponseMessage, Exception?, Task<T>> GetDefaultErrorHandler<T>() =>
             (response, ex) =>
@@ -119,10 +126,12 @@ namespace HttpAction
                 return Task.FromResult(default(T));
             };
 
-        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>() => GetJsonArrayHandler<T>(null);
+        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>(JsonTypeInfo<T> typeInfo)
+        {
+            if (typeInfo == null)
+                throw new ArgumentNullException(nameof(typeInfo));
 
-        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>(JsonTypeInfo<T>? typeInfo) =>
-            async (response) =>
+            return async response =>
             {
                 string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
@@ -132,8 +141,9 @@ namespace HttpAction
                 var root = doc.RootElement;
 
                 return root.EnumerateArray()
-                    .Select(elem => MojangJson.Deserialize<T>(elem.GetRawText(), typeInfo))
+                    .Select(elem => JsonSerializer.Deserialize(elem.GetRawText(), typeInfo))
                     .ToArray();
             };
+        }
     }
 }

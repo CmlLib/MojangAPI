@@ -1,3 +1,4 @@
+using MojangAPI.Serialization;
 using MojangAPI.Model;
 using System;
 using System.Collections.Generic;
@@ -107,7 +108,7 @@ namespace MojangAPI.SecurityQuestion
                 Content = new StringContent(jarr.ToJsonString(), Encoding.UTF8, "application/json"),
 
                 ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<bool>()
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler(MojangJson.GetTypeInfo<bool>())
             });
         }
     }

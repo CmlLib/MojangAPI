@@ -1,5 +1,5 @@
-﻿using HttpAction;
-using MojangAPI.Cache;
+using MojangAPI.Serialization;
+using HttpAction;
 using MojangAPI.Model;
 using System;
 using System.Net.Http;
@@ -11,53 +11,25 @@ namespace MojangAPI
     public class MojangAuth
     {
         private readonly HttpClient client;
-        private readonly ICacheManager<Session>? cacheManager;
 
-        public MojangAuth() : this(null) { }
-
-        public MojangAuth(HttpClient? client) :
-            this(client, new SessionFileCacheManager("mojang_auth.json"))
-        { }
-
-        public MojangAuth(HttpClient? httpClient, ICacheManager<Session>? _cacheManager)
+        public MojangAuth() : this(null)
         {
-            if (httpClient == null)
+        }
+
+        public MojangAuth(HttpClient? client)
+        {
+            if (client == null)
                 this.client = Mojang.DefaultClient.Value;
             else
-                this.client = httpClient;
-
-            this.cacheManager = _cacheManager;
+                this.client = client;
         }
 
-        private string CreateClientToken()
-        {
-            return Guid.NewGuid().ToString();
-        }
-
-        private void SaveSession(Session session)
-        {
-            if (string.IsNullOrEmpty(session.ClientToken))
-            {
-                Session? cachedSession = cacheManager?.ReadCache();
-                if (cachedSession == null || string.IsNullOrEmpty(cachedSession.ClientToken))
-                    session.ClientToken = CreateClientToken();
-                else
-                    session.ClientToken = cachedSession.ClientToken;
-            }
-            cacheManager?.SaveCache(session);
-        }
-
-        private async Task<T> Request<T>(HttpAction<T> httpAction) where T : MojangAuthResponse
+        private Task<T> Request<T>(HttpAction<T> httpAction) where T : MojangAuthResponse
         {
             if (string.IsNullOrEmpty(httpAction.Host))
                 httpAction.Host = "https://authserver.mojang.com";
 
-            T response = await client.SendActionAsync(httpAction);
-
-            if (response.IsSuccess && response.Session != null)
-                SaveSession(response.Session);
-
-            return response;
+            return client.SendActionAsync(httpAction);
         }
 
         private async Task<MojangAuthResponse> authResponseHandler(HttpResponseMessage response)
@@ -69,11 +41,16 @@ namespace MojangAPI
             if (!root.TryGetProperty("selectedProfile", out var selectedProfile))
                 return new MojangAuthResponse(MojangAuthResult.NoProfile);
 
+            string? clientToken = null;
+            if (root.TryGetProperty("clientToken", out var clientTokenProperty))
+                clientToken = clientTokenProperty.GetString();
+
             return new MojangAuthResponse(MojangAuthResult.Success)
             {
                 Session = new Session
                 {
                     AccessToken = root.GetProperty("accessToken").GetString(),
+                    ClientToken = clientToken,
                     UUID = selectedProfile.GetProperty("id").GetString(),
                     Username = selectedProfile.GetProperty("name").GetString()
                 }
@@ -88,7 +65,7 @@ namespace MojangAPI
             try
             {
                 string content = await response.Content.ReadAsStringAsync();
-                MojangAuthResponse authResponse = JsonSerializer.Deserialize<MojangAuthResponse>(content)
+                MojangAuthResponse authResponse = JsonSerializer.Deserialize(content, MojangJson.GetTypeInfo<MojangAuthResponse>())
                     ?? new MojangAuthResponse(MojangAuthResult.UnknownError);
 
                 switch (authResponse.Error)
@@ -117,7 +94,7 @@ namespace MojangAPI
         }
 
         public Task<MojangAuthResponse> Authenticate(string email, string password) =>
-            Authenticate(email, password, cacheManager?.ReadCache()?.ClientToken);
+            Authenticate(email, password, Guid.NewGuid().ToString());
 
         public Task<MojangAuthResponse> Authenticate(string email, string password, string? clientToken) =>
             Request(new HttpAction<MojangAuthResponse>
@@ -125,17 +102,12 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "authenticate",
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new AuthenticationRequest
                 {
-                    agent = new
-                    {
-                        name = "Minecraft",
-                        version = 1
-                    },
-                    username = email,
-                    password,
-                    clientToken
-                }),
+                    Username = email,
+                    Password = password,
+                    ClientToken = clientToken
+                }, MojangJson.GetTypeInfo<AuthenticationRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -146,15 +118,6 @@ namespace MojangAPI
                 ResponseHandler = authResponseHandler,
                 ErrorHandler = errorResponseHandler
             });
-
-        public async Task<MojangAuthResponse> TryAutoLogin()
-        {
-            Session? cachedSession = cacheManager?.ReadCache();
-            if (cachedSession == null || cachedSession.IsEmpty)
-                return new MojangAuthResponse(MojangAuthResult.InvalidSession);
-            else
-                return await TryAutoLogin(cachedSession);
-        }
 
         public async Task<MojangAuthResponse> TryAutoLogin(Session session)
         {
@@ -168,32 +131,23 @@ namespace MojangAPI
             return res;
         }
 
-        public Task<MojangAuthResponse> Refresh()
-        {
-            Session? cachedSession = cacheManager?.ReadCache();
-            if (cachedSession == null)
-                return Task.FromResult(new MojangAuthResponse(MojangAuthResult.InvalidSession));
-            else
-                return Refresh(cachedSession);
-        }
-
         public Task<MojangAuthResponse> Refresh(Session session) =>
             Request(new HttpAction<MojangAuthResponse>
             {
                 Method = HttpMethod.Post,
                 Path = "refresh",
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new TokenRequest
                 {
-                    accessToken = session.AccessToken,
-                    clientToken = session.ClientToken,
+                    AccessToken = session.AccessToken,
+                    ClientToken = session.ClientToken,
 
-                    selectedProfile = new
+                    SelectedProfile = new SelectedProfile
                     {
-                        id = session.UUID,
-                        name = session.Username
+                        Id = session.UUID,
+                        Name = session.Username
                     }
-                }),
+                }, MojangJson.GetTypeInfo<TokenRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -204,15 +158,6 @@ namespace MojangAPI
                 ResponseHandler = authResponseHandler,
                 ErrorHandler = errorResponseHandler
             });
-
-        public Task<MojangAuthResponse> Validate()
-        {
-            Session? cachedSession = cacheManager?.ReadCache();
-            if (cachedSession == null || string.IsNullOrEmpty(cachedSession.AccessToken))
-                return Task.FromResult(new MojangAuthResponse(MojangAuthResult.InvalidSession));
-            else
-                return Validate(cachedSession);
-        }
 
         public async Task<MojangAuthResponse> Validate(Session session)
         {
@@ -231,11 +176,11 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "validate",
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new TokenRequest
                 {
-                    accessToken,
-                    clientToken
-                }),
+                    AccessToken = accessToken,
+                    ClientToken = clientToken
+                }, MojangJson.GetTypeInfo<TokenRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -253,11 +198,11 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Path = "signout",
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new CredentialsRequest
                 {
-                    username = email,
-                    password = password
-                }),
+                    Username = email,
+                    Password = password
+                }, MojangJson.GetTypeInfo<CredentialsRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -270,26 +215,17 @@ namespace MojangAPI
                 ErrorHandler = errorResponseHandler
             });
 
-        public Task<MojangAuthResponse> Invalidate()
-        {
-            Session? cachedSession = cacheManager?.ReadCache();
-            if (cachedSession == null || cachedSession.AccessToken == null)
-                return Task.FromResult(new MojangAuthResponse(MojangAuthResult.InvalidSession));
-            else
-                return Invalidate(cachedSession.AccessToken, cachedSession.ClientToken);
-        }
-
         public Task<MojangAuthResponse> Invalidate(string accessToken, string? clientToken) =>
             Request(new HttpAction<MojangAuthResponse>
             {
                 Method = HttpMethod.Post,
                 Path = "invalidate",
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new TokenRequest
                 {
-                    accessToken = accessToken,
-                    clientToken = clientToken
-                }),
+                    AccessToken = accessToken,
+                    ClientToken = clientToken
+                }, MojangJson.GetTypeInfo<TokenRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -314,7 +250,7 @@ namespace MojangAPI
                 ResponseHandler = async (response) =>
                 {
                     string content = await response.Content.ReadAsStringAsync();
-                    MicrosoftAuthResponse authResponse = JsonSerializer.Deserialize<MicrosoftAuthResponse>(content)
+                    MicrosoftAuthResponse authResponse = JsonSerializer.Deserialize(content, MojangJson.GetTypeInfo<MicrosoftAuthResponse>())
                         ?? new MicrosoftAuthResponse();
                     authResponse.ExpiresOn = DateTime.Now.AddSeconds(authResponse.ExpiresIn);
                     return authResponse;
@@ -350,8 +286,6 @@ namespace MojangAPI
                     AccessToken = authResponse.AccessToken,
                     UUID = profile.UUID
                 };
-
-                SaveSession(session);
 
                 return new MojangAuthResponse(MojangAuthResult.Success)
                 {

@@ -1,4 +1,5 @@
-﻿using HttpAction;
+using MojangAPI.Serialization;
+using HttpAction;
 using MojangAPI.Model;
 using System;
 using System.IO;
@@ -61,7 +62,7 @@ namespace MojangAPI
                 Path = $"user/profiles/{uuid?.Replace("-", "") ?? throw new ArgumentNullException(nameof(uuid))}/names",
                 ResponseHandler = async (response) =>
                 {
-                    var handler = HttpResponseHandlers.GetJsonArrayHandler<NameHistory>();
+                    var handler = HttpResponseHandlers.GetJsonArrayHandler(MojangJson.GetTypeInfo<NameHistory>());
                     return await handler.Invoke(response);
                 },
                 ErrorHandler = MojangException.GetMojangErrorHandler<NameHistory[]>()
@@ -73,8 +74,8 @@ namespace MojangAPI
                 Method = HttpMethod.Post,
                 Host = "https://api.mojang.com",
                 Path = "profiles/minecraft",
-                Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException()),
-                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler<PlayerUUID>(),
+                Content = new JsonHttpContent(usernames ?? throw new ArgumentNullException(), MojangJson.GetTypeInfo<string[]>()),
+                ResponseHandler = HttpResponseHandlers.GetJsonArrayHandler(MojangJson.GetTypeInfo<PlayerUUID>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerUUID[]>()
             });
 
@@ -94,15 +95,16 @@ namespace MojangAPI
             using var document = JsonDocument.Parse(responseContent);
             var root = document.RootElement;
 
-            var profile = root.Deserialize<PlayerProfile>() ?? new PlayerProfile();
+            var profile = JsonSerializer.Deserialize(root.GetRawText(), MojangJson.GetTypeInfo<PlayerProfile>()) ?? new PlayerProfile();
             
             try
             {
                 var innerValue = root.GetProperty("properties")
-                                     .EnumerateArray()
-                                     .First()
-                                     .GetProperty("value")
-                                     .GetString();
+                    .EnumerateArray()
+                    .First()
+                    .GetProperty("value")
+                    .GetString()
+                    ?? throw new JsonException("The profile texture value must be a non-null string.");
 
                 var decoded = Convert.FromBase64String(innerValue);
                 using var skinDocument = JsonDocument.Parse(decoded);
@@ -117,10 +119,10 @@ namespace MojangAPI
             catch
             {
                 SkinType? defaultSkinType = null;
-                if (string.IsNullOrEmpty(profile?.UUID))
-                    defaultSkinType = Skin.GetDefaultSkinType(profile!.UUID!);
+                if (profile.UUID is string profileUuid && !string.IsNullOrEmpty(profileUuid))
+                    defaultSkinType = Skin.GetDefaultSkinType(profileUuid);
 
-                profile!.Skin = new Skin(null, defaultSkinType);
+                profile.Skin = new Skin(null, defaultSkinType);
             }
 
             return profile;
@@ -148,7 +150,7 @@ namespace MojangAPI
             using var doc = JsonDocument.Parse(responseContent);
             var root = doc.RootElement;
 
-            var profile = root.Deserialize<PlayerProfile>() ?? new PlayerProfile();
+            var profile = JsonSerializer.Deserialize(root.GetRawText(), MojangJson.GetTypeInfo<PlayerProfile>()) ?? new PlayerProfile();
 
             try
             {
@@ -160,10 +162,10 @@ namespace MojangAPI
             catch
             {
                 SkinType? defaultSkinType = null;
-                if (string.IsNullOrEmpty(profile?.UUID))
-                    defaultSkinType = Skin.GetDefaultSkinType(profile!.UUID!);
+                if (profile.UUID is string profileUuid && !string.IsNullOrEmpty(profileUuid))
+                    defaultSkinType = Skin.GetDefaultSkinType(profileUuid);
 
-                profile!.Skin = new Skin(null, defaultSkinType);
+                profile.Skin = new Skin(null, defaultSkinType);
             }
 
             return profile;
@@ -181,7 +183,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerAttributes>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler(MojangJson.GetTypeInfo<PlayerAttributes>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerAttributes>()
             });
 
@@ -222,7 +224,7 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                ResponseHandler = HttpResponseHandlers.GetJsonHandler<PlayerCertificates>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler(MojangJson.GetTypeInfo<PlayerCertificates>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerCertificates>()
             });
 
@@ -282,11 +284,11 @@ namespace MojangAPI
                     { "Authorization", "Bearer " + accessToken }
                 },
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new SkinRequest
                 {
-                    variant = skinType.GetModelType(),
-                    url = skinUrl
-                }),
+                    Variant = skinType.GetModelType(),
+                    Url = skinUrl
+                }, MojangJson.GetTypeInfo<SkinRequest>()),
 
                 CheckValidation = (h) =>
                 {
@@ -399,12 +401,12 @@ namespace MojangAPI
                 Host = "https://api.mojang.com",
                 Path = "orders/statistics",
 
-                Content = new JsonHttpContent(new
+                Content = new JsonHttpContent(new StatisticsRequest
                 {
-                    metricKeys = options
-                }),
+                    MetricKeys = options
+                }, MojangJson.GetTypeInfo<StatisticsRequest>()),
 
-                ResponseHandler = HttpResponseHandlers.GetJsonHandler<Statistics>(),
+                ResponseHandler = HttpResponseHandlers.GetJsonHandler(MojangJson.GetTypeInfo<Statistics>()),
                 ErrorHandler = MojangException.GetMojangErrorHandler<Statistics>()
             });
 

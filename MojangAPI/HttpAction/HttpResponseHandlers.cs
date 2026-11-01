@@ -1,4 +1,6 @@
-﻿using System;
+using MojangAPI.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -11,16 +13,19 @@ namespace HttpAction
     {
         public static Func<HttpResponseMessage, Task<T>> GetDefaultResponseHandler<T>()
         {
-            if (typeof(T) == typeof(bool))
-                return GetSuccessCodeResponseHandler() as Func<HttpResponseMessage, Task<T>>;
-            if (typeof(T) == typeof(int))
-                return GetStatusCodeResponseHandler()  as Func<HttpResponseMessage, Task<T>>;
-            if (typeof(T) == typeof(string))
-                return GetStringResponseHandler()      as Func<HttpResponseMessage, Task<T>>;
-            if (typeof(T) == typeof(Stream))
-                return GetStreamResponseHandler()      as Func<HttpResponseMessage, Task<T>>;
+            if (GetSuccessCodeResponseHandler() is Func<HttpResponseMessage, Task<T>> successHandler)
+                return successHandler;
 
-            return GetJsonHandler<T>();
+            if (GetStatusCodeResponseHandler() is Func<HttpResponseMessage, Task<T>> statusCodeHandler)
+                return statusCodeHandler;
+
+            if (GetStringResponseHandler() is Func<HttpResponseMessage, Task<T>> stringHandler)
+                return stringHandler;
+
+            if (GetStreamResponseHandler() is Func<HttpResponseMessage, Task<T>> streamHandler)
+                return streamHandler;
+
+            return response => GetJsonHandler(MojangJson.GetTypeInfo<T>())(response);
         }
 
         public static Func<HttpResponseMessage, Task<bool>> GetSuccessCodeResponseHandler() =>
@@ -63,17 +68,16 @@ namespace HttpAction
                     throw new HttpRequestException();
             };
 
-        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(JsonTypeInfo<T> typeInfo) where T : new() =>
+            GetJsonErrorHandler(new T(), typeInfo);
+
+        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj, JsonTypeInfo<T> typeInfo)
         {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        };
+            if (typeInfo == null)
+                throw new ArgumentNullException(nameof(typeInfo));
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>() where T : new() => GetJsonErrorHandler(new T());
-
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetJsonErrorHandler<T>(T defaultObj) =>
-            async (response, ex) =>
+            return async (response, ex) =>
             {
-                // 
                 if (ex == null)
                 {
                     try
@@ -81,33 +85,42 @@ namespace HttpAction
                         var resBody = await response.Content.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(resBody))
                         {
-                            var obj = JsonSerializer.Deserialize<T>(resBody, jsonSerializerOptions);
+                            var obj = JsonSerializer.Deserialize(resBody, typeInfo);
                             if (obj != null)
                                 return obj;
                         }
                     }
                     catch
                     {
-                        // ignore exception to execute next error handler
+                        // If the response cannot be parsed, fall back to the HTTP status and original exception.
                     }
                 }
 
                 response.EnsureSuccessStatusCode();
                 if (ex != null)
                     throw ex;
+
                 return defaultObj;
             };
+        }
 
-        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>() =>
-            async (response) =>
+        public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>(JsonTypeInfo<T> typeInfo)
+        {
+            if (typeInfo == null)
+                throw new ArgumentNullException(nameof(typeInfo));
+
+            return async response =>
             {
                 string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
                     res = "{}";
-                return JsonSerializer.Deserialize<T>(res, jsonSerializerOptions);
-            };
 
-        public static Func<HttpResponseMessage, Exception?, Task<T>> GetDefaultErrorHandler<T>() =>
+                return JsonSerializer.Deserialize(res, typeInfo)
+                    ?? throw new JsonException("The response must contain a non-null JSON value.");
+            };
+        }
+
+        public static Func<HttpResponseMessage, Exception?, Task<T?>> GetDefaultErrorHandler<T>() =>
             (response, ex) =>
             {
                 response.EnsureSuccessStatusCode();
@@ -117,8 +130,12 @@ namespace HttpAction
                 return Task.FromResult(default(T));
             };
 
-        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>() =>
-            async (response) =>
+        public static Func<HttpResponseMessage, Task<T[]>> GetJsonArrayHandler<T>(JsonTypeInfo<T> typeInfo)
+        {
+            if (typeInfo == null)
+                throw new ArgumentNullException(nameof(typeInfo));
+
+            return async response =>
             {
                 string res = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(res))
@@ -128,8 +145,10 @@ namespace HttpAction
                 var root = doc.RootElement;
 
                 return root.EnumerateArray()
-                    .Select(elem => elem.Deserialize<T>(jsonSerializerOptions))
+                    .Select(elem => JsonSerializer.Deserialize(elem.GetRawText(), typeInfo)
+                        ?? throw new JsonException("The response array must not contain null elements."))
                     .ToArray();
             };
+        }
     }
 }

@@ -13,28 +13,13 @@ namespace MojangAPISample
     {
         public static async Task<MSession> Test(MojangAuth auth)
         {
-            MojangAuthResponse res;
-
-            Console.WriteLine("TryAutoLogin");
-            res = await auth.TryAutoLogin();
-            printAuthResponse(res);
-            Console.WriteLine();
-
-            if (res.IsSuccess)
-                return new MSession
-                {
-                    AccessToken = res.Session.AccessToken,
-                    UUID = res.Session.UUID,
-                    Username = res.Session.Username
-                };
-
             Console.WriteLine("Authenticate");
             Console.Write("Email : ");
             var email = Console.ReadLine();
             Console.Write("Password : ");
             var pw = Console.ReadLine();
 
-            res = await auth.Authenticate(email, pw); // fill your mojang email and password
+            var res = await auth.Authenticate(email, pw);
             printAuthResponse(res);
             Console.WriteLine();
 

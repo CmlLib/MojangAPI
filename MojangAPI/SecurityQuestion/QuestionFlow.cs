@@ -1,4 +1,5 @@
-﻿using MojangAPI.Model;
+using MojangAPI.Serialization;
+using MojangAPI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,7 +87,7 @@ namespace MojangAPI.SecurityQuestion
             var jarr = new JsonArray();
             foreach (var item in list)
             {
-                jarr.Add(new JsonObject
+                jarr.Add((JsonNode)new JsonObject
                 {
                     ["id"] = item.AnswerId,
                     ["answer"] = item.Answer
@@ -107,7 +108,7 @@ namespace MojangAPI.SecurityQuestion
                 Content = new StringContent(jarr.ToJsonString(), Encoding.UTF8, "application/json"),
 
                 ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
-                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler<bool>()
+                ErrorHandler = HttpResponseHandlers.GetJsonErrorHandler(MojangJson.GetTypeInfo<bool>())
             });
         }
     }

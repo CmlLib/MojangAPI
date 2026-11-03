@@ -302,7 +302,7 @@ namespace MojangAPI
                 ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
-        public Task UploadSkin(string accessToken, SkinType skinType, string skinPath)
+        public Task<PlayerProfile> UploadSkin(string accessToken, SkinType skinType, string skinPath)
         {
             if (string.IsNullOrEmpty(accessToken))
                 throw new ArgumentNullException(nameof(accessToken));
@@ -313,11 +313,19 @@ namespace MojangAPI
 
             string filename = Util.ReplaceInvalidChars(Path.GetFileName(skinPath));
             Stream fileStream = File.OpenRead(skinPath);
-            return UploadSkin(accessToken, skinType, fileStream, filename);
+            return UploadSkin(
+                accessToken,
+                skinType,
+                fileStream,
+                filename);
         }
 
-        public Task UploadSkin(string accessToken, SkinType skinType, Stream skinStream, string filename) =>
-            client.SendActionAsync(new HttpAction<bool>
+        public Task<PlayerProfile> UploadSkin(
+            string accessToken,
+            SkinType skinType,
+            Stream skinStream,
+            string filename) =>
+            client.SendActionAsync(new HttpAction<PlayerProfile>
             {
                 Method = HttpMethod.Post,
                 Host = "https://api.minecraftservices.com",
@@ -342,8 +350,8 @@ namespace MojangAPI
                     else return null;
                 },
 
-                ResponseHandler = HttpResponseHandlers.GetSuccessCodeResponseHandler(),
-                ErrorHandler = MojangException.GetMojangErrorHandler<bool>()
+                ResponseHandler = profileResponseHandlerFromAccessToken,
+                ErrorHandler = MojangException.GetMojangErrorHandler<PlayerProfile>()
             });
 
         private StreamContent CreateStreamContent(Stream stream, string contentType)

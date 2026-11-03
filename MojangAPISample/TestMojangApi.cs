@@ -151,7 +151,8 @@ namespace MojangAPISample
         public async Task<bool> TestUploadSkin()
         {
             note("This api only works on xbox account");
-            await mojang.UploadSkin(session.AccessToken, SkinType.Steve, "skin.png");
+            PlayerProfile profile = await mojang.UploadSkin(session.AccessToken, SkinType.Steve, "skin.png");
+            printProfile(profile);
             return true;
         }
 

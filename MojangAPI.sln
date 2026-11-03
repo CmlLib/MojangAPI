@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MojangAPI", "MojangAPI\Moja
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MojangAPISample", "MojangAPISample\MojangAPISample.csproj", "{060EADA1-4770-4933-9EF5-C887E2FE3B79}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MojangAPI.Tests", "tests\MojangAPI.Tests\MojangAPI.Tests.csproj", "{F4CB6A42-D2B6-481F-A874-AAAE9153B991}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,9 +25,16 @@ Global
 		{060EADA1-4770-4933-9EF5-C887E2FE3B79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{060EADA1-4770-4933-9EF5-C887E2FE3B79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{060EADA1-4770-4933-9EF5-C887E2FE3B79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4CB6A42-D2B6-481F-A874-AAAE9153B991}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4CB6A42-D2B6-481F-A874-AAAE9153B991}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4CB6A42-D2B6-481F-A874-AAAE9153B991}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4CB6A42-D2B6-481F-A874-AAAE9153B991}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F4CB6A42-D2B6-481F-A874-AAAE9153B991} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {ADA839A1-7189-45A5-B1A4-C709BCEC4371}

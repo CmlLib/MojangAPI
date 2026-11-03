@@ -141,17 +141,25 @@ PlayerProfile response = await mojang.ChangeSkin("uuid", "accessToken", SkinType
 
 *note: this api only works on xbox account*
 
+업로드 응답의 `PlayerProfile`을 반환한다. 반환값의 `UUID`, `Name`, `Skin.Url`, `Skin.Model`로 변경된 프로필을 확인할 수 있으며, 별도의 프로필 조회 요청은 보내지 않는다.
+
 ```csharp
 Mojang mojang = new Mojang(new HttpClient());
 
-// SkinType.Steve or SkinType.Alex
-await mojang.UploadSkin("accessToken", SkinType.Steve, "skin_png_file_path");
+// SkinType.Steve 또는 SkinType.Alex를 지정한다.
+PlayerProfile profile = await mojang.UploadSkin("accessToken", SkinType.Steve, "skin_png_file_path");
 ```
 ```csharp
 Mojang mojang = new Mojang(new HttpClient());
-Stream stream; // create stream for uploading skin
-await mojang.UploadSkin("accessToken", SkinType.Steve, stream, "file_name");
+using Stream stream = File.OpenRead("skin.png");
+PlayerProfile profile = await mojang.UploadSkin(
+    "accessToken",
+    SkinType.Steve,
+    stream,
+    "skin.png");
 ```
+
+반환값이 필요 없는 기존 `await mojang.UploadSkin(...)` 코드는 그대로 사용할 수 있다. 다만 두 오버로드의 반환형이 `Task`에서 `Task<PlayerProfile>`로 변경되므로, 이전 버전으로 컴파일한 호출 애플리케이션은 다시 빌드해야 한다.
 
 #### ResetSkin
 
